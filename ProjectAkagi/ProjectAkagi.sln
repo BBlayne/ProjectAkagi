@@ -1,12 +1,30 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2015
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectAkagi.CSharp.Plugins", "ProjectAkagi.CSharp.Plugins.csproj", "{618F7B7C-CD60-7163-E816-761AF143E370}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectAkagi.CSharp", "ProjectAkagi.CSharp.csproj", "{17C0163F-5890-18C6-4E05-8F1265757F0D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectAkagi.CSharp.Editor", "ProjectAkagi.CSharp.Editor.csproj", "{6CAC9C57-6D25-E96A-4FAD-B1A86455B5B9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{618F7B7C-CD60-7163-E816-761AF143E370}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{618F7B7C-CD60-7163-E816-761AF143E370}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{618F7B7C-CD60-7163-E816-761AF143E370}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{618F7B7C-CD60-7163-E816-761AF143E370}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17C0163F-5890-18C6-4E05-8F1265757F0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17C0163F-5890-18C6-4E05-8F1265757F0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17C0163F-5890-18C6-4E05-8F1265757F0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17C0163F-5890-18C6-4E05-8F1265757F0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CAC9C57-6D25-E96A-4FAD-B1A86455B5B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CAC9C57-6D25-E96A-4FAD-B1A86455B5B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CAC9C57-6D25-E96A-4FAD-B1A86455B5B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CAC9C57-6D25-E96A-4FAD-B1A86455B5B9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
