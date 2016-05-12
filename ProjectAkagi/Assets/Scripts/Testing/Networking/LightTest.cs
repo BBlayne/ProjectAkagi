@@ -3,8 +3,12 @@ using System.Collections;
 
 public class LightTest : MonoBehaviour {
     public Renderer mRenderer;
-    public GameObject parent;
     public NetworkPlayerTest player;
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+
+    }
 
     void Awake()
     {
@@ -13,7 +17,6 @@ public class LightTest : MonoBehaviour {
 
     void OnEnable()
     {
-        player = parent.GetComponent<NetworkPlayerTest>();
         player.onClicked += ChangeColor;
     }
 
@@ -24,7 +27,19 @@ public class LightTest : MonoBehaviour {
 
     void ChangeColor(Color color)
     {
-        mRenderer.material.color = color;
+        if (mRenderer != null)
+            mRenderer.material.color = color;
+
+        Vector3 _color = new Vector3(color.r, color.g, color.b);
+        GetComponent<PhotonView>().RPC("ChangeColorNetwork", PhotonTargets.All, _color);
+    }
+
+    [PunRPC]
+    void ChangeColorNetwork(Vector3 _color)
+    {
+        Color col = new Color(_color.x, _color.y, _color.z, 1);
+        if (mRenderer != null)
+            mRenderer.material.color = col;
     }
 
     // Use this for initialization

@@ -18,17 +18,21 @@ Platform assembly: H:\Projects\Development\ProjectAkagi\ProjectAkagi\Builds\Wind
 Loading H:\Projects\Development\ProjectAkagi\ProjectAkagi\Builds\WindowsNetworkTest_Data\Managed\UnityEngine.Networking.dll into Unity Child Domain
 Platform assembly: H:\Projects\Development\ProjectAkagi\ProjectAkagi\Builds\WindowsNetworkTest_Data\Managed\Photon3Unity3D.dll (this message is harmless)
 Loading H:\Projects\Development\ProjectAkagi\ProjectAkagi\Builds\WindowsNetworkTest_Data\Managed\Photon3Unity3D.dll into Unity Child Domain
-- Completed reload, in  0.181 seconds
+- Completed reload, in  0.209 seconds
 Platform assembly: H:\Projects\Development\ProjectAkagi\ProjectAkagi\Builds\WindowsNetworkTest_Data\Managed\System.Core.dll (this message is harmless)
 Platform assembly: H:\Projects\Development\ProjectAkagi\ProjectAkagi\Builds\WindowsNetworkTest_Data\Managed\System.dll (this message is harmless)
 desktop: 1920x1080 60Hz; virtual: 3600x1086 at 0,0
 <RI> Initializing input.
 <RI> Input initialized.
 <RI> Initialized touch support.
-UnloadTime: 0.739520 ms
+UnloadTime: 0.605440 ms
 Setting up 1 worker threads for Enlighten.
-  Thread -> id: 2110 -> priority: 1 
+  Thread -> id: 5164 -> priority: 1 
 Spawning player..
  
 (Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
+
+Joystick disconnected ("Controller (XBOX 360 For Windows)").
+ 
+(Filename:  Line: 714)
 

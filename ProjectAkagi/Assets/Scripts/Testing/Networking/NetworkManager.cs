@@ -26,10 +26,17 @@ public class NetworkManager : MonoBehaviour {
 
     void OnJoinedRoom()
     {
+        Random.seed = System.DateTime.Now.Millisecond;
         Debug.Log("Spawning player..");
-        PhotonNetwork.Instantiate(prefabName,
-            spawn.position,
+        GameObject lightHouse = PhotonNetwork.Instantiate(prefabName,
+            spawn.position + new Vector3(Random.Range(0, 5), Random.Range(0, 5), Random.Range(0, 5)),
             spawn.rotation,
             0);
+        lightHouse.GetComponent<NetworkPlayerTest>().enabled = true;
+    }
+
+    void OnGUI()
+    {
+        GUILayout.Label(PhotonNetwork.connectionStateDetailed.ToString());
     }
 }
