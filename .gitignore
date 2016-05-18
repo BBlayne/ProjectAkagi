@@ -15,6 +15,7 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+/[Bb]uild/*.*
  
 # ===================================== #
 # Visual Studio / MonoDevelop generated #

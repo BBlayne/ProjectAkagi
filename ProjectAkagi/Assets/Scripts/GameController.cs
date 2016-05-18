@@ -2,14 +2,15 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class GameController : MonoBehaviour {
-    List<Poker.Card> deck;
-    List<Poker.Card> pool;
+public class GameController : Photon.MonoBehaviour {
+    List<Poker.Card> deck = new List<Poker.Card>();
     public List<Poker.Player> players = new List<Poker.Player>();
+    List<Poker.Card> pool;
+    public Material[] mats;
 
     public int bigBlind = 0;
     public int firstPlayer = 0;
-    public Poker.Player currentPlayer;
+    public int currentPlayer;
 
     public int playerCount = 0;
     int pot = 0;
@@ -27,31 +28,48 @@ public class GameController : MonoBehaviour {
 
     void OnEnable()
     {
-        Poker.Player.OnClicked += OnClicked;
+        //Poker.Player.OnClicked += OnClicked;
     }
 
 
     void OnDisable()
     {
-        Poker.Player.OnClicked -= OnClicked;
+        //Poker.Player.OnClicked -= OnClicked;
     }
 
     void OnClicked(int id)
     {
-        Debug.Log(id);
+        //Debug.Log(id);
     }
 
     // Use this for initialization
     void Start () {
-        pool = new List<Poker.Card>();
-        InitDeck();
-        Shuffle(deck);
-        DealOpeningHand();
-        DealFlop();
+        //pool = new List<Poker.Card>();
+
+        //this.photonView.RPC("InitDeck", PhotonTargets.All);
+        //InitDeck();
+        //Random.seed = System.DateTime.Now.Millisecond;
+
+        // Probably better to just make the deck locally and then sync results?
+        //this.photonView.RPC("Shuffle", PhotonTargets.All, deck, Random.seed);
+        //Shuffle(deck);
+        //DealOpeningHand();
+        //DealFlop();
     }
 
+    [PunRPC]
+    public void InitSeed()
+    {
+        Random.seed = System.DateTime.Now.Millisecond;
+        Debug.Log(Random.seed);
+    }
+
+
+
+    [PunRPC]
     void InitDeck()
     {
+        Debug.Log("Initializing Deck...");
         deck = new List<Poker.Card>();
         for (int k = 0; k < 4; k++)
         {
@@ -78,29 +96,43 @@ public class GameController : MonoBehaviour {
 	void LateUpdate () {
 	    if (Input.touchCount > 0 || Input.GetMouseButtonDown(0))
         {
-            PickupFlop();            
-            Redeal();
-            DealFlop();
+            //PickupFlop();            
+            //Redeal();
+            //DealFlop();
         }
 	}
 
     void DetermineTurnOrder()
     {
-        bigBlind = Random.Range(0, players.Count - 1);
+        bigBlind = Random.Range(0, playerCount - 1);
         // Make sure we don't exceed the number of players
         // For now we allow there to be only one player.
-        firstPlayer = (bigBlind + 1) % players.Count;
+        firstPlayer = (bigBlind + 1) % playerCount;
     }
 
-    void initGame()
+    [PunRPC]
+    public void initGame()
     {
+        Debug.Log("Initializing game state...");
+   
+        //this.photonView.RPC("InitDeck", PhotonTargets.All);
+        //InitDeck();
+        //Random.seed = System.DateTime.Now.Millisecond;
+        this.photonView.RPC("InitSeed", PhotonTargets.All);
+        // Probably better to just make the deck locally and then sync results?
+        this.photonView.RPC("Shuffle", PhotonTargets.All, deck, Random.seed);
+        //Shuffle(deck);
+        //DealOpeningHand();
+        //DealFlop();
         // Randomly determine first player, player "left" of big blind.
-        DetermineTurnOrder();
+        //DetermineTurnOrder();
+
     }
 
     void DealOpeningHand()
     {
         // All players draw initial drawing hand (two cards)
+        /*
         foreach (Poker.Player player in players)
         {
             // deal two cards
@@ -108,6 +140,7 @@ public class GameController : MonoBehaviour {
             player.hand.Add(Deal(deck));
             UpdatePlayerHand(player.id);
         }
+        */
     }
 
     void DealFlop()
@@ -138,8 +171,11 @@ public class GameController : MonoBehaviour {
         // Showdown
     }
 
-    void Shuffle(List<Poker.Card> _deck)
+    [PunRPC]
+    void Shuffle(List<Poker.Card> _deck, int seed)
     {
+        Debug.Log("Shuffling the deck...");
+        Random.seed = seed;
         // Shuffle needs to be changed when working for
         // real production deployment due to security concerns!
         for (int i = 0; i < _deck.Count; i++)
@@ -170,7 +206,7 @@ public class GameController : MonoBehaviour {
 
     void Redeal()
     {
-
+        /*
         foreach (Poker.Player player in players)
         {
             foreach (Poker.Card card in player.hand)
@@ -183,7 +219,7 @@ public class GameController : MonoBehaviour {
             handPositions[player.id].FindChild("Card1").gameObject.SetActive(false);
         }
 
-        Shuffle(deck);
+        Shuffle(deck, Random.seed);
 
         // All players draw initial drawing hand (two cards)
         foreach (Poker.Player player in players)
@@ -193,12 +229,13 @@ public class GameController : MonoBehaviour {
             player.hand.Add(Deal(deck));
             UpdatePlayerHand(player.id);
         }
-
+        */
 
     }
 
     void UpdatePlayerHand(int player)
     {
+        /*
         handPositions[player].FindChild("Card0").gameObject.SetActive(true);
         handPositions[player].FindChild("Card0").gameObject.GetComponent<SpriteRenderer>().sprite = 
             cardSprites[((int)players[player].hand[0].suit * 13) + (int)players[player].hand[0].rank - 1];
@@ -206,7 +243,7 @@ public class GameController : MonoBehaviour {
         handPositions[player].FindChild("Card1").gameObject.SetActive(true);
         handPositions[player].FindChild("Card1").gameObject.GetComponent<SpriteRenderer>().sprite =
             cardSprites[((int)players[player].hand[1].suit * 13) + (int)players[player].hand[1].rank - 1];
-
+            */
     }
 
     void UpdateFlop()
@@ -217,5 +254,49 @@ public class GameController : MonoBehaviour {
             flopPositions[i].gameObject.GetComponent<SpriteRenderer>().sprite =
             cardSprites[((int)pool[i].suit * 13) + (int)pool[i].rank - 1];
         }
+    }
+
+    [PunRPC]
+    public void AddPlayer()
+    {
+        
+        //this.players.Add(_player);
+        playerCount++;
+    }
+
+    public void AddAllPlayers()
+    {
+        GameObject.Find("Canvas").transform.FindChild("btnStart").gameObject.SetActive(false);
+        Debug.Log("Add all players...");
+        Debug.Log("Poker.Player Count: " + PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)).Count);
+        this.photonView.RPC("AddAllPlayersSynced", PhotonTargets.All);
+    }
+
+    [PunRPC]
+    public void AddAllPlayersSynced()
+    {
+        Debug.Log("RPC..." + PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)).Count);
+        foreach (GameObject _player in PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)))
+        {
+            players.Add(_player.GetComponent<Poker.Player>());
+        }
+    }
+
+    public void AddPlayer(Poker.Player _player)
+    {
+        this.players.Add(_player);
+    }
+
+    void OnGUI()
+    {
+        if (deck.Count > 0)
+            GUI.Label(new Rect(10, 20, 200, 200), this.deck[0].rank.ToString());
+        else
+            GUI.Label(new Rect(10, 20, 200, 200), deck.Count.ToString());
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+
     }
 }

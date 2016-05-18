@@ -15,6 +15,6 @@ public class ButtonHandler : MonoBehaviour {
 
     public void myClick()
     {
-        controller.currentPlayer.SendBetting();
+        //controller.currentPlayer.SendBetting();
     }
 }
