@@ -12,6 +12,20 @@ namespace Poker
         Rank _rank;
         Color _color;
 
+        bool _isFaceDown = true;
+
+        public bool isFaceDown
+        {
+            get
+            {
+                return this._isFaceDown;
+            }
+            set
+            {
+                this._isFaceDown = value;
+            }
+        }
+
         // Setters & Getters
         public Suit suit
         {

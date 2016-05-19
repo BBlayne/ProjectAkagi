@@ -49,8 +49,9 @@ namespace Poker
                 
             player.GetComponent<Renderer>().material = gameMaster.mats[PhotonNetwork.player.ID - 1];
             player.GetComponent<Player>().enabled = true;
-            gameMaster.photonView.RPC("AddPlayer", PhotonTargets.AllBuffered);
+            gameMaster.photonView.RPC("AddPlayer", PhotonTargets.AllBuffered);            
             player.GetComponent<Player>().photonView.RPC("InitColour", PhotonTargets.AllBuffered, PhotonNetwork.player.ID);
+            player.GetComponent<Player>().photonView.RPC("SetId", PhotonTargets.AllBuffered, PhotonNetwork.player.ID);
 
             if (PhotonNetwork.playerList.Length == 1)
             {
