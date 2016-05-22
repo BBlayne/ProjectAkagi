@@ -95,7 +95,7 @@ namespace Poker
                 {
                     initX = Input.mousePosition.x;
                     initY = Input.mousePosition.y;
-                    Debug.Log("Mouse down");
+                    //Debug.Log("Mouse down");
                     cards = hit.transform;
                     screenPoint = Camera.main.WorldToScreenPoint(cards.position);
                     offset = cards.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
@@ -120,7 +120,7 @@ namespace Poker
                         Mathf.Approximately(Input.mousePosition.y, currentPos.y) && 
                         Mathf.Approximately(Input.mousePosition.z, currentPos.z))
                 {
-                    Debug.Log("Mouse is stationary");       
+                    //Debug.Log("Mouse is stationary");       
                     if (cards != null)
                     {
                         target = new Vector3(cards.position.x, target.y, cursorPosition.z);
@@ -135,27 +135,27 @@ namespace Poker
                 else
                 {
                     // is moving
-                    Debug.Log("Mouse is moving");
+                    //Debug.Log("Mouse is moving");
                     isStationary = false;
                     isDrag = true;
                     targetLocation = new Vector3(cursorPosition.x, cards.position.y, cursorPosition.z);
-                    Debug.Log("X Movement %: " + map(Input.mousePosition.x, initX, Screen.width / 2, 0, 100));
-                    Debug.Log("Y Movement %: " + map(Input.mousePosition.y, initY, Screen.height / 2, 0, 100));
-                    float yCardPos = map(Input.mousePosition.x, initX, Screen.width / 2, 0, 100);
-                    float xCardPos = map(Input.mousePosition.y, initY, Screen.height / 2, 0, 100);
+                    //Debug.Log("X Movement %: " + map(Input.mousePosition.x, initX, Screen.width / 2, 0, 100));
+                    //Debug.Log("Y Movement %: " + map(Input.mousePosition.y, initY, Screen.height / 2, 0, 100));
+                    float xCardPos = map(Input.mousePosition.x, initX, Screen.width / 2, 0, 100);
+                    float yCardPos = map(Input.mousePosition.y, initY, Screen.height / 2, 0, 100);
 
-                    if ((yCardPos < 50.0f) && (xCardPos > 0.0f))
+                    if ((yCardPos <= 50.0f) && (xCardPos >= 0.0f))
                     {
-                        float rot = Mathf.LerpAngle(0, 180, (xCardPos/100));
-                        Debug.Log("rotating by: " + rot);
+                        float rot = Mathf.LerpAngle(0, 180, (xCardPos / 100.0f));
+                        Quaternion mQuatRot = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.AngleAxis(rot, new Vector3(0, 0, 1)), Time.deltaTime * 10);
                         if (cards != null)
                         {
-                            cards.Find("Card0").transform.Rotate(new Vector3(0, rot, 0));
+                            cards.Find("Card0").transform.rotation = mQuatRot;
                         }
                     }
                     else
                     {
-                        //cards.Find("Card0").transform.Rotate(new Vector3(0, 1, 0), 0, Space.Self);
+                        cards.Find("Card0").transform.rotation = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
                     }
                 }
 
@@ -176,6 +176,7 @@ namespace Poker
                 if (cards != null)
                 {
                     cards.position = Vector3.Lerp(cards.position, originalCardPos, 10 * Time.deltaTime);
+                    cards.Find("Card0").transform.rotation = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
                     if (Mathf.Approximately(cards.position.x, originalCardPos.x) && Mathf.Approximately(cards.position.y, originalCardPos.y)
                         && Mathf.Approximately(cards.position.z, originalCardPos.z))
                     {
@@ -186,7 +187,7 @@ namespace Poker
             }
             else if (isDrag || isStationary)
             {
-                Debug.Log("Updating position");                
+                //Debug.Log("Updating position");                
                 if (cards != null)
                 {
                     cards.position = targetLocation;
