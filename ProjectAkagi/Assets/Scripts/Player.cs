@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 namespace Poker
 {
@@ -35,8 +36,14 @@ namespace Poker
         private Vector3 playerPos;
         private float minHandDist;
         public float minHandDistancePercent = 15;
-        Vector3 cursorPoint = Vector3.zero;
-        Vector3 cursorPosition = Vector3.zero;
+        Vector3 flopPos;
+        GameObject slider;
+        GameObject txtBet;
+        //Vector3 cursorPoint = Vector3.zero;
+        //Vector3 cursorPosition = Vector3.zero;
+
+        Vector3 foldPoint;
+
 
         public void SendBetting()
         {
@@ -57,6 +64,10 @@ namespace Poker
             playerPos = GameObject.Find("PlayerPositions").transform.Find("playerPos" + (id - 1)).position;
             playerPos = new Vector3(playerPos.x, 0, playerPos.z);
             minHandDist = (playerPos - GameObject.Find("Flop").transform.position).magnitude * (minHandDistancePercent / 100.0f);
+            foldPoint = GameObject.Find("foldPoint").transform.position;
+            flopPos = GameObject.Find("Flop").transform.position;
+            slider = GameObject.Find("Canvas").transform.Find("scrollBet").gameObject;
+            txtBet = GameObject.Find("Canvas").transform.Find("txtBet").gameObject;
         }
 
         [PunRPC]
@@ -98,7 +109,7 @@ namespace Poker
             RaycastHit hit;
             //Vector3 cursorPoint = Vector3.zero;                               
             //Vector3 cursorPosition = Vector3.zero;
-            targetLocation = Vector3.zero;
+            //targetLocation = Vector3.zero;
 
             if (Input.GetMouseButtonDown(0))
             {
@@ -106,18 +117,28 @@ namespace Poker
                 currentPos = Input.mousePosition;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-                if (Physics.Raycast(ray, out hit) && hit.transform.tag == "player" + (id - 1))
+                if (Physics.Raycast(ray, out hit) && hit.transform.tag == "player" + (id - 1) && hit.transform.gameObject.layer != LayerMask.NameToLayer("chips"))
                 {
                     initX = Input.mousePosition.x;
                     initY = Input.mousePosition.y;
                     initialDistance = (cards.position - playerPos).magnitude;
-                    //Debug.Log("Clicked Hand for " + (id - 1));
+                    Debug.Log("Clicked Hand for player" + (id - 1));
                     isHeld = true;
-                    screenPoint = Camera.main.WorldToScreenPoint(cards.position);
-                    offset = cards.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
-                    cursorPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z);
-                    cursorPosition = Camera.main.ScreenToWorldPoint(cursorPoint) + offset;
-                }       
+                    slider.SetActive(false);
+                    //targetLocation = cards.position;
+                    //screenPoint = Camera.main.WorldToScreenPoint(cards.position);
+                    //offset = cards.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
+                    //cursorPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z);
+                    //cursorPosition = Camera.main.ScreenToWorldPoint(cursorPoint) + offset;
+
+                }  
+                else if (Physics.Raycast(ray, out hit) && hit.transform.tag == "player" + (id - 1) && (hit.transform.gameObject.layer == LayerMask.NameToLayer("chips")))
+                {
+                    slider.SetActive(true);
+                }
+                else
+                {
+                }
 
             }
 
@@ -129,13 +150,12 @@ namespace Poker
                 {
                     //screenPoint = Camera.main.WorldToScreenPoint(cards.position);
                     //offset = cards.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
-                    cursorPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z);                               
-                    cursorPosition = Camera.main.ScreenToWorldPoint(cursorPoint) + offset;
+                    //cursorPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z);                               
+                    //cursorPosition = Camera.main.ScreenToWorldPoint(cursorPoint) + offset;
 
                     // if is not moving
                     if (Mathf.Approximately(Input.mousePosition.x, currentPos.x) && 
-                            Mathf.Approximately(Input.mousePosition.y, currentPos.y) && 
-                            Mathf.Approximately(Input.mousePosition.z, currentPos.z))
+                            Mathf.Approximately(Input.mousePosition.y, currentPos.y))
                     {
                         Debug.Log("Mouse is stationary");       
                         if (cards != null)
@@ -143,7 +163,7 @@ namespace Poker
                             //target = new Vector3(cursorPosition.x, 0, cursorPosition.z);
                             //target = Vector3.zero;
                             //target = Camera.main.ScreenToWorldPoint(new Vector3(cursorPosition.x, cursorPosition.y, cards.position.y));
-                            targetLocation = new Vector3(cursorPosition.x, cursorPosition.y, cursorPosition.z);
+                            //targetLocation = new Vector3(cursorPosition.x, cursorPosition.y, cursorPosition.z);
                             //Debug.Log(target);
                             /*
                             if (!Mathf.Approximately(cards.position.y, target.y))
@@ -171,8 +191,6 @@ namespace Poker
                         //Debug.Log("X Movement %: " + map(Input.mousePosition.x, initX, Screen.width / 2, 0, 100));
                         //Debug.Log("Y Movement %: " + map(Input.mousePosition.y, initY, Screen.height / 2, 0, 100));
                         //Camera.main.WorldToScreenPoint(playerPos)
-                        //float xCardPos = map(Input.mousePosition.x, initX, Screen.width / 2, 0, 100);
-                        //float yCardPos = map(Input.mousePosition.y, initY, Screen.height / 2, 0, 100);
 
                         // Camera.main.WorldToScreenPoint
                         //float xCardPos = map(Input.mousePosition.x, initX, Camera.main.WorldToScreenPoint(playerPos).x, 0, 100);
@@ -200,11 +218,20 @@ namespace Poker
                             cards.Find("Card1").transform.rotation = Quaternion.Lerp(cards.Find("Card1").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
                         }        
                         */
-                        targetLocation = new Vector3(cursorPosition.x, cursorPosition.y, cursorPosition.z);
+                        //targetLocation = new Vector3(cursorPosition.x, cursorPosition.y, cursorPosition.z);
+                        Vector3 newPos = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, Input.mousePosition.z));
+                        targetLocation = new Vector3(newPos.x, cards.position.y, newPos.z);
+                        
                     }
                 }
             }
-            
+
+            //Vector3 newPos2 = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, Input.mousePosition.z));
+            //newPos2.y = flopPos.y;
+            //Debug.Log(flopPos + ", Distance to center: " + (flopPos - newPos2).magnitude);
+
+            txtBet.GetComponent<Text>().text = (slider.GetComponent<Scrollbar>().value * 500).ToString();
+
             // Player released the cards
             if (Input.GetMouseButtonUp(0))
             {
@@ -238,7 +265,61 @@ namespace Poker
                 // Updating our coordinates, still needs polish              
                 if (cards != null)
                 {
-                    cards.position = targetLocation;
+                    cards.position = Vector3.Lerp(cards.position, targetLocation, Time.deltaTime * 2);
+
+                    float xCardPos = map(Input.mousePosition.x, initX, Camera.main.WorldToScreenPoint(playerPos).x, 0, 100);
+                    float yCardPos = map(Input.mousePosition.y, initY, Camera.main.WorldToScreenPoint(playerPos).y, 0, 100);
+                    Vector3 flatCardPosition = new Vector3(cards.position.x, 0, playerPos.z);
+                    float distanceToPlayerPos = (flatCardPosition - playerPos).magnitude - initialDistance;
+                    float cardPos = Mathf.Abs(distanceToPlayerPos);
+                    float rot = Mathf.LerpAngle(0, 180, (cardPos / initialDistance));
+
+                    if (cards.position.x > playerPos.x)
+                    {
+                        cards.position = new Vector3(playerPos.x, cards.position.y, cards.position.z);
+
+                        if (cards.position.z > foldPoint.z)
+                        {
+                            cards.Find("Card0").transform.rotation = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
+                            cards.Find("Card1").transform.rotation = Quaternion.Lerp(cards.Find("Card1").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
+                        }
+                        else
+                        {
+                            cards.Find("Card0").transform.rotation = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.AngleAxis(rot, new Vector3(0, 0, -1)), Time.deltaTime * 10);
+                            cards.Find("Card1").transform.rotation = Quaternion.Lerp(cards.Find("Card1").transform.rotation, Quaternion.AngleAxis(rot, new Vector3(0, 0, -1)), Time.deltaTime * 10);
+                        }
+                    }
+                    else if (cards.position.x <= originalCardPos.x)
+                    {
+                        cards.position = new Vector3(originalCardPos.x, cards.position.y, cards.position.z);
+                        if (cards.position.z > foldPoint.z)
+                        {
+                            cards.Find("Card0").transform.rotation = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
+                            cards.Find("Card1").transform.rotation = Quaternion.Lerp(cards.Find("Card1").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
+                        }
+                        else
+                        {
+                            cards.Find("Card0").transform.rotation = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
+                            cards.Find("Card1").transform.rotation = Quaternion.Lerp(cards.Find("Card1").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
+                        }                        
+                        
+                    }
+                    else
+                    {
+                        if (cards.position.z > foldPoint.z)
+                        {
+                            cards.Find("Card0").transform.rotation = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
+                            cards.Find("Card1").transform.rotation = Quaternion.Lerp(cards.Find("Card1").transform.rotation, Quaternion.identity, Time.deltaTime * 10);
+                        }
+                        else
+                        {
+                            cards.Find("Card0").transform.rotation = Quaternion.Lerp(cards.Find("Card0").transform.rotation, Quaternion.AngleAxis(rot, new Vector3(0, 0, -1)), Time.deltaTime * 10);
+                            cards.Find("Card1").transform.rotation = Quaternion.Lerp(cards.Find("Card1").transform.rotation, Quaternion.AngleAxis(rot, new Vector3(0, 0, -1)), Time.deltaTime * 10);
+                        } 
+                    }
+                        
+                    
+                    
                     //screenPoint = Camera.main.WorldToScreenPoint(cards.position);
                     //offset = cards.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
                 }
