@@ -211,26 +211,23 @@ public class HighlightsPostEffect : MonoBehaviour
 		RenderTexture.ReleaseTemporary(highlightRT);
 	}
 
-    void Update()
+    public void RefreshHighlight()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            //CreateBuffers();
-            //CreateMaterials();
-            SetOccluderObjects();
+        //CreateBuffers();
+        //CreateMaterials();
+        SetOccluderObjects();
 
-            //m_blur = gameObject.AddComponent<BlurOptimized>();
-            //m_blur.enabled = false;
+        //m_blur = gameObject.AddComponent<BlurOptimized>();
+        //m_blur.enabled = false;
 
-            GameObject[] occludees = GameObject.FindGameObjectsWithTag(m_occludeesTag);
-            highlightObjects = new Renderer[occludees.Length];
+        GameObject[] occludees = GameObject.FindGameObjectsWithTag(m_occludeesTag);
+        highlightObjects = new Renderer[occludees.Length];
 
 
-            for (int i = 0; i < occludees.Length; i++)
-                highlightObjects[i] = occludees[i].GetComponent<Renderer>();
+        for (int i = 0; i < occludees.Length; i++)
+            highlightObjects[i] = occludees[i].GetComponent<Renderer>();
 
-            m_RTWidth = (int)(Screen.width / (float)m_resolution);
-            m_RTHeight = (int)(Screen.height / (float)m_resolution);
-        }
+        m_RTWidth = (int)(Screen.width / (float)m_resolution);
+        m_RTHeight = (int)(Screen.height / (float)m_resolution);
     }
 }
