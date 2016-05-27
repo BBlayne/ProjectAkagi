@@ -20,7 +20,10 @@ namespace Poker
         public delegate void IsBetting(int playerId);
         public static event IsBetting OnClicked;
         public GameController gameMaster = null;
+
         Transform cards;
+        Transform localCards;
+
         Vector3 lastTouch;
 
         private Vector3 currentPos;
@@ -45,6 +48,7 @@ namespace Poker
         Vector3 foldPoint;
 
         Transform slot;
+        Transform localSlot;
         Transform chips;
 
         int slotID = 0;
@@ -63,9 +67,11 @@ namespace Poker
         {            
             id = (_id % 6); // 6 is max players, we need to loop back around as 6th player equals 0th slot, so slot0 is pos 6.
             slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + id);
+            localSlot = GameObject.Find("PlayerSlotPositions").transform.Find("slot0");
             chips = slot.Find("mChips");
             originalCardPos = GameObject.Find("PlayerSlotPositions").transform.Find("slot"+id).transform.Find("PlayerHandPosition").transform.position;
-            cards = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + id).transform.Find("PlayerHandPosition").transform.Find("PlayerHand");            
+            cards = slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");            
+            localCards = localSlot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
             targetLocation = originalCardPos;
             playerPos = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + id).transform.position;
             playerPos = new Vector3(playerPos.x, 0, playerPos.z);
