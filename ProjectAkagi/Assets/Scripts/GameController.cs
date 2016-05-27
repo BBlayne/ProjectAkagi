@@ -279,6 +279,7 @@ public class GameController : Photon.MonoBehaviour {
         foreach (GameObject _player in PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)))
         {
             players.Add(_player.GetComponent<Poker.Player>());
+            _player.GetComponent<Poker.Player>().photonView.RPC("DealHandTest", PhotonTargets.All);
         }
     }
 

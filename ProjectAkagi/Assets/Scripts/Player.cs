@@ -44,6 +44,11 @@ namespace Poker
 
         Vector3 foldPoint;
 
+        Transform slot;
+        Transform chips;
+
+        int slotID = 0;
+
 
         public void SendBetting()
         {
@@ -56,14 +61,15 @@ namespace Poker
         [PunRPC]
         void SetId(int _id)
         {            
-            id = _id;
-            originalCardPos = GameObject.Find("PlayerHandPosition" + (id - 1)).transform.position;
-            //cards = GameObject.Find("Hands").transform.Find("PlayerHandPosition" + (id - 1));
-            cards = GameObject.Find("PlayerHandPosition" + (id - 1)).transform;
+            id = (_id % 6); // 6 is max players, we need to loop back around as 6th player equals 0th slot, so slot0 is pos 6.
+            slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + id);
+            chips = slot.Find("mChips");
+            originalCardPos = GameObject.Find("PlayerSlotPositions").transform.Find("slot"+id).transform.Find("PlayerHandPosition").transform.position;
+            cards = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + id).transform.Find("PlayerHandPosition").transform.Find("PlayerHand");            
             targetLocation = originalCardPos;
-            playerPos = GameObject.Find("PlayerPositions").transform.Find("playerPos" + (id - 1)).position;
+            playerPos = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + id).transform.position;
             playerPos = new Vector3(playerPos.x, 0, playerPos.z);
-            foldPoint = GameObject.Find("foldPoint").transform.position;
+            foldPoint = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + id).transform.Find("foldPoint").transform.position;
             flopPos = GameObject.Find("Flop").transform.position;
             slider = GameObject.Find("Canvas").transform.Find("Panel").transform.Find("scrollBet").gameObject;
             txtBet = GameObject.Find("Canvas").transform.Find("txtBet").gameObject;
@@ -72,23 +78,56 @@ namespace Poker
         [PunRPC]
         void InitColour(int id)
         {
-            Debug.Log("InitColour " + id);
-            //this.enabled = true;
-            if (PhotonNetwork.player.ID == id)
-            {
-                //this.GetComponent<Renderer>().material = gameMaster.mats[id - 1];
-            }
-            else
-            {
-
-            }
-
             this.GetComponent<Renderer>().material = gameMaster.mats[id - 1];
+        }
+
+        [PunRPC]
+        void SetGlowEffectCards(string _tag)
+        {
+            cards.transform.Find("Card0").Find("Occludee0").tag = _tag;
+            cards.transform.Find("Card0").Find("Occludee1").tag = _tag;
+            cards.transform.Find("Card1").Find("Occludee0").tag = _tag;
+            cards.transform.Find("Card1").Find("Occludee1").tag = _tag;
+            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+        }
+
+        void SetLocalGlowEffectCards(string _tag)
+        {
+            Transform _cards = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+            _cards.transform.Find("Card0").Find("Occludee0").tag = _tag;
+            _cards.transform.Find("Card0").Find("Occludee1").tag = _tag;
+            _cards.transform.Find("Card1").Find("Occludee0").tag = _tag;
+            _cards.transform.Find("Card1").Find("Occludee1").tag = _tag;
+            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+        }
+
+        [PunRPC]
+        void SetGlowEffectChips(string _tag)
+        {
+            chips.Find("Chips0").tag = _tag;
+            chips.Find("Chips1").tag = _tag;
+            chips.Find("Chips2").tag = _tag;
+            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+        }
+
+        void SetLocalGlowEffectChips(string _tag)
+        {
+            Transform _chips = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("mChips");
+            _chips.Find("Chips0").tag = _tag;
+            _chips.Find("Chips1").tag = _tag;
+            _chips.Find("Chips2").tag = _tag;
+            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+        }
+
+        [PunRPC]
+        void DealHandTest()
+        {
+            cards.gameObject.SetActive(true);
+            chips.gameObject.SetActive(true);
         }
 
         void Awake()
         {
-            Debug.Log("Awake");
             if (gameMaster == null)
             {
                 gameMaster = GameObject.Find("GameController").GetComponent<GameController>();            
@@ -113,38 +152,34 @@ namespace Poker
                 currentPos = Input.mousePosition;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-                if (Physics.Raycast(ray, out hit) && hit.transform.tag == "player" + (id - 1) && hit.transform.gameObject.layer != LayerMask.NameToLayer("chips"))
+                if (Physics.Raycast(ray, out hit) && hit.transform.tag == "player0" && hit.transform.gameObject.layer != LayerMask.NameToLayer("chips"))
                 {
                     initX = Input.mousePosition.x;
                     initY = Input.mousePosition.y;
                     initialDistance = (cards.position - playerPos).magnitude;
-                    Debug.Log("Clicked Hand for player" + (id - 1));
                     isHeld = true;
                     slider.SetActive(false);
-                    txtBet.SetActive(false);
-                    cards.transform.Find("Card0").Find("Occludee0").tag = "Occludee";
-                    cards.transform.Find("Card0").Find("Occludee1").tag = "Occludee";
-                    cards.transform.Find("Card1").Find("Occludee0").tag = "Occludee";
-                    cards.transform.Find("Card1").Find("Occludee1").tag = "Occludee";
-                    Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+                    txtBet.SetActive(false);                    
+                    this.photonView.RPC("SetGlowEffectCards", PhotonTargets.Others, "Occludee");
+                    SetLocalGlowEffectCards("Occludee");
                 }
-                else if (Physics.Raycast(ray, out hit) && hit.transform.tag == "player" + (id - 1) && (hit.transform.gameObject.layer == LayerMask.NameToLayer("chips")))
+                else if (Physics.Raycast(ray, out hit) && hit.transform.tag == "player0" && (hit.transform.gameObject.layer == LayerMask.NameToLayer("chips")))
                 {
                     slider.SetActive(true);
-                    txtBet.SetActive(true);
-                    GameObject.Find("mChips").transform.Find("Chips0").tag = "Occludee";
-                    GameObject.Find("mChips").transform.Find("Chips1").tag = "Occludee";
-                    GameObject.Find("mChips").transform.Find("Chips2").tag = "Occludee";
-                    Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+                    txtBet.SetActive(true);                    
+                    this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Occludee");
+                    SetGlowEffectChips("Occludee");
                 }
                 else if (hit.transform.gameObject.layer == LayerMask.NameToLayer("Default") && EventSystem.current.currentSelectedGameObject == null)
                 {                    
                     slider.SetActive(false);
                     txtBet.SetActive(false);
-                    GameObject.Find("mChips").transform.Find("Chips0").tag = "Untagged";
-                    GameObject.Find("mChips").transform.Find("Chips1").tag = "Untagged";
-                    GameObject.Find("mChips").transform.Find("Chips2").tag = "Untagged";
-                    Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+                    if (chips.gameObject.GetActive())
+                    {
+                        this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged");
+                        SetLocalGlowEffectChips("Untagged");
+                    }
+                        
                 }
 
             }
@@ -185,7 +220,7 @@ namespace Poker
                 }
             }
 
-            txtBet.GetComponent<Text>().text = (slider.GetComponent<Scrollbar>().value * 500).ToString();
+            txtBet.GetComponent<Text>().text = Mathf.Floor(slider.GetComponent<Scrollbar>().value * 500).ToString();
 
             // Player released the cards
             if (Input.GetMouseButtonUp(0))
@@ -195,11 +230,12 @@ namespace Poker
                 isHeld = false;
                 isDrag = false;
                 isStationary = false;
-                cards.transform.Find("Card0").Find("Occludee0").tag = "Untagged";
-                cards.transform.Find("Card0").Find("Occludee1").tag = "Untagged";
-                cards.transform.Find("Card1").Find("Occludee0").tag = "Untagged";
-                cards.transform.Find("Card1").Find("Occludee1").tag = "Untagged";
-                Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+                if (cards.gameObject.GetActive())
+                {
+                    this.photonView.RPC("SetGlowEffectCards", PhotonTargets.Others, "Untagged");
+                    SetLocalGlowEffectCards("Untagged");
+                }
+                    
             }
 
             // Lerp the hand back to it's original start position and orientation
@@ -368,6 +404,30 @@ namespace Poker
             }
         }
 
+        void OnPhotonInstantiate(PhotonMessageInfo info)
+        {
+            //Debug.Log(PhotonNetwork.playerList.Length);
+            if (PhotonNetwork.player.ID == info.sender.ID)
+            {
+                // Created by local player
+                // Transform already handled by Network Manager.
+                //this.transform.SetParent(GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform);
+                //this.transform.localPosition = new Vector3(0, 0, 0);
+            }
+            else
+            {
+                // Created over the network by another player
+                slotID = (info.sender.ID - (PhotonNetwork.player.ID - 1)) % 6;
+                // What the fuck C# !?!?!? -Modulo is negative? Wtf.
+                if (slotID < 0)
+                    slotID += 6; // max number of players.
+                
+                this.transform.SetParent(GameObject.Find("PlayerSlotPositions").transform.Find("slot"+ slotID).transform);
+                this.transform.localPosition = new Vector3(0, 0, 0);
+            }
+
+        }
+
         float map(float s, float a1, float a2, float b1, float b2)
         {
             return b1 + (s - a1) * (b2 - b1) / (a2 - a1);
@@ -375,10 +435,7 @@ namespace Poker
 
         void OnGUI()
         {
-            //GUI.Label(new Rect(0, 40, 200, 200), scrollPosition.y.ToString());
-            //GUI.Label(new Rect(0, 80, 200, 200), scrollPosition.x.ToString());
-            //GUILayout.Label(PhotonNetwork.connectionStateDetailed.ToString
-            GUI.Label(new Rect(0, 40, 200, 200), "Player"+(this.photonView.ownerId - 1).ToString());
+            GUI.Label(new Rect(0, 40, 200, 200), "Player"+(this.photonView.ownerId).ToString());
         }
     }
 }

@@ -6,7 +6,7 @@ namespace Poker
     [RequireComponent(typeof(GameController))]
     [RequireComponent(typeof(PhotonView))]
     public class NetworkManager : MonoBehaviour {
-        const string VERSION = "v0.0.1";
+        const string VERSION = "v0.0.3";
         public string roomName = "My Room";
         public string prefabName = "poker_player";
         public GameController gameMaster = null;
@@ -32,7 +32,7 @@ namespace Poker
             RoomOptions roomOptions = new RoomOptions()
             {
                 isVisible = false,
-                maxPlayers = 8
+                maxPlayers = 6
             };
             PhotonNetwork.JoinOrCreateRoom(roomName, roomOptions, TypedLobby.Default);
         }
@@ -40,13 +40,37 @@ namespace Poker
 
         void OnJoinedRoom()
         {
+            //Debug.Log(GameObject.FindGameObjectsWithTag("Player").Length);
+            Debug.Log("My id is: " + PhotonNetwork.player.ID + ", the number of players connected is: " + PhotonNetwork.playerList.Length);
+            if (PhotonNetwork.playerList.Length == 1)
+            {
+                // I am the first client.
 
-            Debug.Log("Spawning new poker player..");
+            }
+            else
+            {
+                // I am not the first client
+
+            }
+            
+            // Find and cache our transform for slot{id}; from the perspective of every other client, this is
+            // our position.            
+            Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot"+ (PhotonNetwork.player.ID % 6));
             GameObject player = PhotonNetwork.Instantiate(prefabName,
-                gameMaster.playerPositions[PhotonNetwork.player.ID - 1].position,
-                gameMaster.playerPositions[PhotonNetwork.player.ID - 1].rotation,
+                slot.position,
+                slot.rotation,
                 0);
-                
+            // Across network, reassign parent transforms accordingly.
+            //player.GetComponent<Player>().photonView.RPC("setParent", PhotonTargets.All, PhotonNetwork.player.ID);
+
+            // Locally however, we are always slot1.
+            // Reassign local parent to the slot1's transform reset it's position.
+            player.transform.SetParent(GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform);
+            player.transform.localPosition = new Vector3(0,0,0);
+
+            //Debug.Log(GameObject.FindGameObjectsWithTag("Player").Length);
+
+            //
             player.GetComponent<Renderer>().material = gameMaster.mats[PhotonNetwork.player.ID - 1];
             player.GetComponent<Player>().enabled = true;
             gameMaster.photonView.RPC("AddPlayer", PhotonTargets.AllBuffered);            
@@ -61,7 +85,7 @@ namespace Poker
             {
 
             }
-
+            
             
         }
 
@@ -70,7 +94,12 @@ namespace Poker
             if (PhotonNetwork.player.ID == host)
             {
                 Debug.Log("I am the host, and a player has joined.");
+                Debug.Log(GameObject.FindGameObjectsWithTag("Player").Length);
                 GameObject.Find("Canvas").transform.FindChild("btnStart").gameObject.SetActive(true);
+            }
+            else
+            {
+
             }
             
         }
