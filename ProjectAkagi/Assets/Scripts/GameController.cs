@@ -275,11 +275,16 @@ public class GameController : Photon.MonoBehaviour {
     [PunRPC]
     public void AddAllPlayersSynced()
     {
-        Debug.Log("RPC..." + PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)).Count);
+        List<int> playerIDs = new List<int>();
+        foreach (GameObject _player in PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)))
+        {
+            playerIDs.Add(_player.GetComponent<Poker.Player>().id);
+        }
+
         foreach (GameObject _player in PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)))
         {
             players.Add(_player.GetComponent<Poker.Player>());
-            _player.GetComponent<Poker.Player>().photonView.RPC("DealHandTest", PhotonTargets.All);
+            _player.GetComponent<Poker.Player>().photonView.RPC("DealHandTest", PhotonTargets.All, playerIDs.ToArray());
         }
     }
 

@@ -54,8 +54,8 @@ public class HighlightsPostEffect : MonoBehaviour
 	private Renderer[] m_occluders = null;
 	
 	private Material m_highlightMaterial;
-	
-	private CommandBuffer m_renderBuffer;
+
+    private CommandBuffer m_renderBuffer;
 
 	private int m_RTWidth = 512;
 	private int m_RTHeight = 512;
