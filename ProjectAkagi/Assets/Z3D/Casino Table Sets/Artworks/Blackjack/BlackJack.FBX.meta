@@ -1,0 +1,136 @@
+fileFormatVersion: 2
+guid: 4f51ad8d11f092348b32420ef3d7510a
+timeCreated: 1425923647
+licenseType: Store
+ModelImporter:
+  serializedVersion: 18
+  fileIDToRecycleName:
+    100000: //RootNode
+    100002: BlackJack_Chips
+    100004: BlackJack_Seats
+    100006: BlackJack_Table
+    100008: Object001
+    100010: Object002
+    100012: Object003
+    100014: Object004
+    100016: Object005
+    100018: Object006
+    100020: Object007
+    100022: Object008
+    100024: Object009
+    100026: Object010
+    400000: //RootNode
+    400002: BlackJack_Chips
+    400004: BlackJack_Seats
+    400006: BlackJack_Table
+    400008: Object001
+    400010: Object002
+    400012: Object003
+    400014: Object004
+    400016: Object005
+    400018: Object006
+    400020: Object007
+    400022: Object008
+    400024: Object009
+    400026: Object010
+    2300000: BlackJack_Chips
+    2300002: BlackJack_Seats
+    2300004: BlackJack_Table
+    2300006: Object001
+    2300008: Object002
+    2300010: Object003
+    2300012: Object004
+    2300014: Object005
+    2300016: Object006
+    2300018: Object007
+    2300020: Object008
+    2300022: Object009
+    2300024: Object010
+    2300026: //RootNode
+    3300000: BlackJack_Chips
+    3300002: BlackJack_Seats
+    3300004: BlackJack_Table
+    3300006: Object001
+    3300008: Object002
+    3300010: Object003
+    3300012: Object004
+    3300014: Object005
+    3300016: Object006
+    3300018: Object007
+    3300020: Object008
+    3300022: Object009
+    3300024: Object010
+    3300026: //RootNode
+    4300000: BlackJack_Table
+    4300002: BlackJack_Seats
+    4300004: BlackJack_Chips
+    4300006: Object001
+    4300008: Object002
+    4300010: Object003
+    4300012: Object004
+    4300014: Object005
+    4300016: Object006
+    4300018: Object007
+    4300020: Object008
+    4300022: Object009
+    4300024: Object010
+    7400000: Take 001
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationCompression: 1
+    animationRotationError: .5
+    animationPositionError: .5
+    animationScaleError: .5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    splitTangentsAcrossUV: 1
+    normalImportMode: 0
+    tangentImportMode: 1
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: .5
+    foreArmTwist: .5
+    upperLegTwist: .5
+    legTwist: .5
+    armStretch: .0500000007
+    legStretch: .0500000007
+    feetSpacing: 0
+    rootMotionBoneName: 
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

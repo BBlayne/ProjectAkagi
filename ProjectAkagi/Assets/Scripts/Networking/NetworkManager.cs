@@ -62,21 +62,20 @@ namespace Poker
                 0);
             // Across network, reassign parent transforms accordingly.
             //player.GetComponent<Player>().photonView.RPC("setParent", PhotonTargets.All, PhotonNetwork.player.ID);
-
+            player.name = "player";
             // Locally however, we are always slot1.
             // Reassign local parent to the slot1's transform reset it's position.
             player.transform.SetParent(GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform);
             player.transform.localPosition = new Vector3(0,0,0);
 
-            //Debug.Log(GameObject.FindGameObjectsWithTag("Player").Length);
-
             //
             player.GetComponent<Renderer>().material = gameMaster.mats[PhotonNetwork.player.ID - 1];
-            player.GetComponent<Player>().enabled = true;
+            //player.GetComponent<Player>().enabled = true;
             gameMaster.photonView.RPC("AddPlayer", PhotonTargets.AllBuffered);            
             player.GetComponent<Player>().photonView.RPC("InitColour", PhotonTargets.AllBuffered, PhotonNetwork.player.ID);
             player.GetComponent<Player>().photonView.RPC("SetId", PhotonTargets.AllBuffered, PhotonNetwork.player.ID);
-
+            player.GetComponent<Player>().photonView.RPC("SetUI", PhotonTargets.AllBuffered);
+            
             if (PhotonNetwork.playerList.Length == 1)
             {
                 host = PhotonNetwork.player.ID;

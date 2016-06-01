@@ -52,6 +52,12 @@ namespace Poker
         Transform localSlot;
         Transform chips;
 
+        private Vector3 correctPos;
+
+        public int betAmount = 0;
+
+        public GameObject mTxtBetAmt = null;
+
         int slotID = 0;
 
 
@@ -61,6 +67,18 @@ namespace Poker
             {
                 OnClicked(id);
             }
+        }
+
+        [PunRPC]
+        void setIsBetting(bool _state)
+        {
+            this.isBetting = _state;
+        }
+
+        [PunRPC]
+        void setBettingUI(bool _state)
+        {
+            this.mTxtBetAmt.SetActive(_state);
         }
 
         [PunRPC]
@@ -80,6 +98,41 @@ namespace Poker
             flopPos = GameObject.Find("Flop").transform.position;
             slider = GameObject.Find("Canvas").transform.Find("Panel").transform.Find("scrollBet").gameObject;
             txtBet = GameObject.Find("Canvas").transform.Find("txtBet").gameObject;
+            this.enabled = true;
+        }
+
+        [PunRPC]
+        void SetUI()
+        {
+            // assume ID is known.
+            int _slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
+            // Raaaaaaging
+            if (_slotID < 0)
+                _slotID += 6; // max number of players.
+
+            slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID);
+            chips = slot.Find("mChips");
+
+            this.mTxtBetAmt = GameObject.Find("Canvas").transform.Find("playerBets").transform.Find("txtSlot"+ _slotID).gameObject;
+
+            Vector3 pos = chips.Find("uiPos").transform.position;
+            Vector3 screenPos = Camera.main.WorldToViewportPoint(pos);
+            screenPos.x *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.width;
+            screenPos.y *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.height;
+            this.mTxtBetAmt.transform.position = screenPos;
+
+            this.mTxtBetAmt.GetComponent<Text>().text = this.betAmount.ToString();
+
+            Transform playerPosition = slot.Find("player");
+            Vector3 playerPos = playerPosition.position;
+            screenPos = Camera.main.WorldToViewportPoint(playerPos);
+            screenPos.x *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.width;
+            screenPos.y *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.height;
+            GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject.transform.position = screenPos;
+            GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject.GetComponent<Text>().text = "player" + this.id;
+            GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject.GetComponent<Text>().color = this.GetComponent<Renderer>().material.color;
+            GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject.SetActive(true);
+
         }
 
         [PunRPC]
@@ -127,7 +180,6 @@ namespace Poker
 
             Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
             Transform _chips = slot.transform.Find("mChips");
-            Debug.Log(_isClicked);
             _chips.Find("Chips0").tag = _tag;
             _chips.Find("Chips1").tag = _tag;
             _chips.Find("Chips2").tag = _tag;
@@ -183,10 +235,78 @@ namespace Poker
 	    }
 
         // Update is called once per frame
+        void Update()
+        {
+            /*
+            slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
+            Debug.Log("Slot ID: " + slotID + ", this.id: " + this.id + ", local PlayerID" + PhotonNetwork.player.ID);
+            // 2 - (2 - 1) : 1 % 6 = 1
+            // Raaaaaaging
+            if (slotID < 0)
+                slotID += 6; // max number of players.
+
+            Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
+            Transform _cards = slot.Find("PlayerHandPosition").transform.Find("PlayerHand");
+            if (localCards != null && _cards != null)
+            {
+                if (stream.isWriting)
+                {
+                    // We own this player, send other players our data
+                    stream.SendNext(localCards.localPosition);
+                }
+                else
+                {
+                    // Network player, recieve data            
+                    _cards.localPosition = (Vector3)stream.ReceiveNext();                        
+                }
+            }*/
+
+            if (!this.photonView.isMine)
+            {
+                Debug.Log("Is not mine");
+                slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
+                Debug.Log("Slot ID: " + slotID + ", this.id: " + this.id + ", local PlayerID" + PhotonNetwork.player.ID);
+                // 2 - (2 - 1) : 1 % 6 = 1
+                // Raaaaaaging
+                if (slotID < 0)
+                    slotID += 6; // max number of players.
+
+                Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
+                Transform _cards = slot.Find("PlayerHandPosition").transform.Find("PlayerHand");
+                if (localCards != null && _cards != null)
+                {
+                    // Network player, recieve data            
+                    _cards.localPosition = Vector3.Lerp(_cards.localPosition, this.correctPos, Time.deltaTime * 5);
+                }
+
+                if (this.isBetting)
+                {   
+                    this.mTxtBetAmt.GetComponent<Text>().text = ((int)Mathf.Floor(Mathf.Lerp(
+                       int.Parse(this.mTxtBetAmt.GetComponent<Text>().text), this.betAmount, Time.deltaTime * 5))).ToString();
+                }
+                    
+
+                //txtBet.GetComponent<Text>().text = this.betAmount.ToString();
+            }
+            else
+            {
+                if (this.isBetting)
+                    this.betAmount = (int)Mathf.Floor(slider.GetComponent<Scrollbar>().value * 500);
+
+                txtBet.GetComponent<Text>().text = this.betAmount.ToString();
+            }
+        }
+
+        // At the end of Update
         void LateUpdate () {
             RaycastHit hit;
 
-            if (Input.GetMouseButtonDown(0))
+            if (!this.photonView.isMine)
+            {
+
+            }
+
+            if (Input.GetMouseButtonDown(0) && PhotonNetwork.player.ID == this.id)
             {
                 Debug.Log("Mouse down");
                 currentPos = Input.mousePosition;
@@ -209,6 +329,8 @@ namespace Poker
                     txtBet.SetActive(true);
                     this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Occludee", true);
                     SetGlowEffectChips("Occludee", true);
+                    this.photonView.RPC("setIsBetting", PhotonTargets.All, true);
+                    this.photonView.RPC("setBettingUI", PhotonTargets.Others, true);
 
                 }
                 else if (hit.transform.gameObject.layer == LayerMask.NameToLayer("Default") && EventSystem.current.currentSelectedGameObject == null)
@@ -225,6 +347,8 @@ namespace Poker
                     {
                         this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged", false);
                         SetLocalGlowEffectChips("Untagged", false);
+                        this.photonView.RPC("setIsBetting", PhotonTargets.All, false);
+                        this.photonView.RPC("setBettingUI", PhotonTargets.Others, false);
                     }
                         
                 }
@@ -233,7 +357,7 @@ namespace Poker
 
             // if we're holding down the left mouse button
             // we are either holding stationary, or dragging.
-            if (Input.GetMouseButton(0))
+            if (Input.GetMouseButton(0) && PhotonNetwork.player.ID == this.id)
             {
                 if (isHeld)
                 {
@@ -267,10 +391,8 @@ namespace Poker
                 }
             }
 
-            txtBet.GetComponent<Text>().text = Mathf.Floor(slider.GetComponent<Scrollbar>().value * 500).ToString();
-
             // Player released the cards
-            if (Input.GetMouseButtonUp(0))
+            if (Input.GetMouseButtonUp(0) && PhotonNetwork.player.ID == this.id)
             {
                 Debug.Log("Mouse released");
                 isLetGo = true;
@@ -292,7 +414,7 @@ namespace Poker
             }
 
             // Lerp the hand back to it's original start position and orientation
-            if (isLetGo && !isStationary && !isDrag && !isHeld)
+            if (isLetGo && !isStationary && !isDrag && !isHeld && PhotonNetwork.player.ID == this.id)
             {
                 if (cards != null)
                 {
@@ -307,7 +429,7 @@ namespace Poker
 
                 }
             }
-            else if (isDrag || isStationary)
+            else if ((isDrag || isStationary) && PhotonNetwork.player.ID == this.id)
             {
                 // Updating our coordinates, still needs polish              
                 if (cards != null)
@@ -441,6 +563,7 @@ namespace Poker
 
         public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
         {
+            /*
             slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
             Debug.Log("Slot ID: " + slotID + ", this.id: " + this.id + ", local PlayerID" + PhotonNetwork.player.ID);
             // 2 - (2 - 1) : 1 % 6 = 1
@@ -461,6 +584,21 @@ namespace Poker
                 {
                     // Network player, recieve data            
                     _cards.localPosition = (Vector3)stream.ReceiveNext();                        
+                }
+            }*/
+
+            if (localCards != null)
+            {
+                if (stream.isWriting)
+                {
+                    // We own this player, send other players our data
+                    stream.SendNext(localCards.localPosition);
+                    stream.SendNext(this.betAmount);
+                }
+                else
+                {
+                    correctPos = (Vector3)stream.ReceiveNext();
+                    this.betAmount = (int)stream.ReceiveNext();
                 }
             }
         }
@@ -485,6 +623,7 @@ namespace Poker
                 
                 this.transform.SetParent(GameObject.Find("PlayerSlotPositions").transform.Find("slot"+ slotID).transform);
                 this.transform.localPosition = new Vector3(0, 0, 0);
+                this.name = "player";
             }
 
         }
