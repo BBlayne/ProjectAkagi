@@ -119,7 +119,7 @@ namespace Poker
             Vector3 screenPos = Camera.main.WorldToViewportPoint(pos);
             screenPos.x *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.width;
             screenPos.y *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.height;
-            this.mTxtBetAmt.transform.position = screenPos;
+            this.mTxtBetAmt.transform.parent.position = screenPos;
 
             this.mTxtBetAmt.GetComponent<Text>().text = this.betAmount.ToString();
 
@@ -128,10 +128,11 @@ namespace Poker
             screenPos = Camera.main.WorldToViewportPoint(playerPos);
             screenPos.x *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.width;
             screenPos.y *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.height;
-            GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject.transform.position = screenPos;
-            GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject.GetComponent<Text>().text = "player" + this.id;
-            GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject.GetComponent<Text>().color = this.GetComponent<Renderer>().material.color;
-            GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject.SetActive(true);
+            GameObject mPlayerNameTag = GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).Find("text").gameObject;
+            mPlayerNameTag.transform.parent.position = screenPos;
+            mPlayerNameTag.GetComponent<Text>().text = "player" + this.id;
+            mPlayerNameTag.GetComponent<Text>().color = this.GetComponent<Renderer>().material.color;
+            mPlayerNameTag.transform.parent.gameObject.SetActive(true);
 
         }
 
