@@ -64,7 +64,10 @@ public class HighlightsPostEffect : MonoBehaviour
 
 	private void Awake()
 	{
-		CreateBuffers();
+        GameObject[] occluderGOs = GameObject.FindGameObjectsWithTag("Occluder");
+
+
+        CreateBuffers();
 		CreateMaterials();
 		SetOccluderObjects();
 
@@ -79,7 +82,7 @@ public class HighlightsPostEffect : MonoBehaviour
 		for( int i = 0; i < occludees.Length; i++ )
 			highlightObjects[i] = occludees[i].GetComponent<Renderer>();
 
-		m_RTWidth = (int) (Screen.width / (float) m_resolution);
+        m_RTWidth = (int) (Screen.width / (float) m_resolution);
 		m_RTHeight = (int) (Screen.height / (float) m_resolution);
 	}
 
@@ -104,10 +107,12 @@ public class HighlightsPostEffect : MonoBehaviour
 			return;
 		
 		GameObject[] occluderGOs = GameObject.FindGameObjectsWithTag(m_occludersTag);
-		
-		List<Renderer> occluders = new List<Renderer>();
+
+
+        List<Renderer> occluders = new List<Renderer>();
 		foreach( GameObject go in occluderGOs )
 		{
+            go.SetActive(true);
 			Renderer renderer = go.GetComponent<Renderer>();
 			if( renderer != null )
 				occluders.Add( renderer );
@@ -169,7 +174,7 @@ public class HighlightsPostEffect : MonoBehaviour
 	{
 		RenderTexture highlightRT;
 
-		RenderTexture.active = highlightRT = RenderTexture.GetTemporary(m_RTWidth, m_RTHeight, 0, RenderTextureFormat.R8 );
+		RenderTexture.active = highlightRT = RenderTexture.GetTemporary(m_RTWidth, m_RTHeight, 0, RenderTextureFormat.ARGB32 );
 		GL.Clear(true, true, Color.clear);
 		RenderTexture.active = null;
 
@@ -177,7 +182,7 @@ public class HighlightsPostEffect : MonoBehaviour
 
 		RenderHighlights(highlightRT);
 
-		RenderTexture blurred = RenderTexture.GetTemporary( m_RTWidth, m_RTHeight, 0, RenderTextureFormat.R8 );
+		RenderTexture blurred = RenderTexture.GetTemporary( m_RTWidth, m_RTHeight, 0, RenderTextureFormat.ARGB32);
 
 
 		m_blur.OnRenderImage( highlightRT, blurred );
@@ -187,7 +192,7 @@ public class HighlightsPostEffect : MonoBehaviour
 
 		if( m_fillType == FillType.Outline )
 		{
-			RenderTexture occluded = RenderTexture.GetTemporary( m_RTWidth, m_RTHeight, 0, RenderTextureFormat.R8);
+			RenderTexture occluded = RenderTexture.GetTemporary( m_RTWidth, m_RTHeight, 0, RenderTextureFormat.ARGB32);
 
 			// Excluding the original image from the blurred image, leaving out the areal alone
 			m_highlightMaterial.SetTexture("_OccludeMap", highlightRT);
@@ -205,20 +210,14 @@ public class HighlightsPostEffect : MonoBehaviour
 
 		m_highlightMaterial.SetColor("_Color", m_highlightColor);
 		Graphics.Blit (source, destination, m_highlightMaterial, (int) m_selectionType);
-
-
-		RenderTexture.ReleaseTemporary(blurred);
+                
+        RenderTexture.ReleaseTemporary(blurred);
 		RenderTexture.ReleaseTemporary(highlightRT);
 	}
 
     public void RefreshHighlight()
     {
-        //CreateBuffers();
-        //CreateMaterials();
         SetOccluderObjects();
-
-        //m_blur = gameObject.AddComponent<BlurOptimized>();
-        //m_blur.enabled = false;
 
         GameObject[] occludees = GameObject.FindGameObjectsWithTag(m_occludeesTag);
         highlightObjects = new Renderer[occludees.Length];
@@ -229,5 +228,13 @@ public class HighlightsPostEffect : MonoBehaviour
 
         m_RTWidth = (int)(Screen.width / (float)m_resolution);
         m_RTHeight = (int)(Screen.height / (float)m_resolution);
+    }
+
+    void Update()
+    {
+        if (Input.GetMouseButton(0))
+        {
+            SetOccluderObjects();
+        }
     }
 }

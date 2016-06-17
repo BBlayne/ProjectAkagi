@@ -6,8 +6,8 @@ namespace Poker
     [RequireComponent(typeof(GameController))]
     [RequireComponent(typeof(PhotonView))]
     public class NetworkManager : MonoBehaviour {
-        const string VERSION = "v0.0.3";
-        public string roomName = "My Room";
+        const string VERSION = "v0.0.6";
+        public string roomName = "My Room 5";
         public string prefabName = "poker_player";
         public GameController gameMaster = null;
 
@@ -40,6 +40,7 @@ namespace Poker
 
         void OnJoinedRoom()
         {
+
             //Debug.Log(GameObject.FindGameObjectsWithTag("Player").Length);
             Debug.Log("My id is: " + PhotonNetwork.player.ID + ", the number of players connected is: " + PhotonNetwork.playerList.Length);
             if (PhotonNetwork.playerList.Length == 1)
@@ -56,6 +57,7 @@ namespace Poker
             // Find and cache our transform for slot{id}; from the perspective of every other client, this is
             // our position.            
             Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot"+ (PhotonNetwork.player.ID % 6));
+            
             GameObject player = PhotonNetwork.Instantiate(prefabName,
                 slot.position,
                 slot.rotation,
@@ -70,8 +72,9 @@ namespace Poker
 
             //
             player.GetComponent<Renderer>().material = gameMaster.mats[PhotonNetwork.player.ID - 1];
-            //player.GetComponent<Player>().enabled = true;
-            gameMaster.photonView.RPC("AddPlayer", PhotonTargets.AllBuffered);            
+            player.GetComponent<Player>().enabled = true;
+            gameMaster.photonView.RPC("AddPlayer", PhotonTargets.AllBuffered);          
+              
             player.GetComponent<Player>().photonView.RPC("InitColour", PhotonTargets.AllBuffered, PhotonNetwork.player.ID);
             player.GetComponent<Player>().photonView.RPC("SetId", PhotonTargets.AllBuffered, PhotonNetwork.player.ID);
             player.GetComponent<Player>().photonView.RPC("SetUI", PhotonTargets.AllBuffered);
@@ -93,7 +96,6 @@ namespace Poker
             if (PhotonNetwork.player.ID == host)
             {
                 Debug.Log("I am the host, and a player has joined.");
-                Debug.Log(GameObject.FindGameObjectsWithTag("Player").Length);
                 GameObject.Find("Canvas").transform.FindChild("btnStart").gameObject.SetActive(true);
             }
             else

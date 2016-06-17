@@ -10,7 +10,7 @@ namespace Poker
     public class Card {
         Suit _suit;
         Rank _rank;
-        Color _color;
+        Colour _color;
 
         bool _isFaceDown = true;
 
@@ -51,7 +51,7 @@ namespace Poker
             }
         }
 
-        public Color color
+        public Colour color
         {
             get
             {
@@ -68,11 +68,11 @@ namespace Poker
         {
             this.suit = Suit.NUM_SUITS;
             this.rank = Rank.joker;
-            this.color = Color.grey;
+            this.color = Colour.black;
         }
 
         // parameterized constructor
-        public Card(Suit mySuitType, Rank myRank, Color myColor)
+        public Card(Suit mySuitType, Rank myRank, Colour myColor)
         {
             this.suit = mySuitType;
             this.rank = myRank;

@@ -1,19 +1,25 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
+[RequireComponent(typeof(Poker.NetworkManager))]
 public class GameController : Photon.MonoBehaviour {
     List<Poker.Card> deck = new List<Poker.Card>();
     public List<Poker.Player> players = new List<Poker.Player>();
-    List<Poker.Card> pool;
+    List<Poker.Card> pool = new List<Poker.Card>();
     public Material[] mats;
 
-    public int bigBlind = 0;
-    public int firstPlayer = 0;
-    public int currentPlayer;
+    public int dealerID = 0;        
+    public int currentPlayerID;
+
+    public bool setCurrentPlayerManually = false;
+
+    public GameObject dealer = null;
 
     public int playerCount = 0;
     int pot = 0;
+    public int turnCount = 0;
 
     // Round Variables
     public bool hasBet = false;
@@ -26,26 +32,21 @@ public class GameController : Photon.MonoBehaviour {
     public Sprite[] cardSprites;
     public GameObject card;
 
-    void OnEnable()
-    {
-        //Poker.Player.OnClicked += OnClicked;
-    }
+    string mString = "";
 
+    Poker.NetworkManager netManager;
 
-    void OnDisable()
-    {
-        //Poker.Player.OnClicked -= OnClicked;
-    }
+    // Game information
+    public int minimumBindAmount = 1;
+    // Round to round game state information
+    int lastAmountBetOrRaised = 0;
 
-    void OnClicked(int id)
-    {
-        //Debug.Log(id);
-    }
+    public bool hasDealt = false;
 
     // Use this for initialization
     void Start () {
-        //pool = new List<Poker.Card>();
 
+        netManager = GetComponent<Poker.NetworkManager>();
         //this.photonView.RPC("InitDeck", PhotonTargets.All);
         //InitDeck();
         //Random.seed = System.DateTime.Now.Millisecond;
@@ -58,10 +59,89 @@ public class GameController : Photon.MonoBehaviour {
     }
 
     [PunRPC]
+    public void CallHandler()
+    {
+        if (PhotonNetwork.isMasterClient)
+        {
+            Debug.Log("CallHandler");
+            OnEndTurn();
+        }
+    }
+
+    [PunRPC]
+    public void RaiseHandler()
+    {
+        if (PhotonNetwork.isMasterClient)
+        {
+            Debug.Log("RaiseHandler");
+            OnEndTurn();
+        }
+    }
+
+    [PunRPC]
+    public void AllInHandler()
+    {
+        if (PhotonNetwork.isMasterClient)
+        {
+            Debug.Log("AllInHandler");
+            OnEndTurn();
+        }
+    }
+
+    void ChooseDealer()
+    {
+        // Dealer is chosen randomly, big and small blind are picked after wards.
+        Random.seed = System.DateTime.Now.Millisecond;
+        int _dealerID = Random.Range(1, PhotonNetwork.playerList.Length + 1);
+        Debug.Log("dealer id, " + _dealerID + ", players #:" + PhotonNetwork.playerList.Length);
+        _dealerID = _dealerID % 6;
+        Debug.Log("Chose player" + _dealerID + ", as the dealer.");
+        this.photonView.RPC("SetDealer", PhotonTargets.All, _dealerID);
+
+    }
+
+    [PunRPC]
+    void SetDealer(int _dealerID)
+    {
+        dealerID = _dealerID;
+        // assume ID is known.
+        int _slotID = (_dealerID - (PhotonNetwork.player.ID - 1)) % 6;
+        // Raaaaaaging
+        if (_slotID < 0)
+            _slotID += 6; // max number of players.
+
+        GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID).Find("ButtonPos").Find("DealerButton").gameObject.SetActive(true);
+
+        // If we have at least 3 players, assign current player as the big blind.
+        if (PhotonNetwork.playerList.Length > 2)
+        {
+            currentPlayerID = ((dealerID + (PhotonNetwork.playerList.Length - 1)) % PhotonNetwork.playerList.Length);
+            if (currentPlayerID == 0)
+                currentPlayerID = PhotonNetwork.playerList.Length;
+        }            
+        else
+        {
+            if (!setCurrentPlayerManually)
+            {
+                // If we're only two players just make current player the non dealer.
+                currentPlayerID = (dealerID % PhotonNetwork.playerList.Length) + 1;
+            }
+
+        }
+
+        Debug.Log("Current player is Player" + currentPlayerID);
+            
+    }
+
+    void PromptPlayer()
+    {
+        // RPC Call to current player
+    }
+
+    [PunRPC]
     public void InitSeed()
     {
         Random.seed = System.DateTime.Now.Millisecond;
-        Debug.Log(Random.seed);
     }
 
 
@@ -73,11 +153,11 @@ public class GameController : Photon.MonoBehaviour {
         deck = new List<Poker.Card>();
         for (int k = 0; k < 4; k++)
         {
-            Color myColor;
+            Poker.Colour myColor;
             if (k % 2 == 0)
-                myColor = Color.red;
+                myColor = Poker.Colour.red;
             else
-                myColor = Color.black;
+                myColor = Poker.Colour.black;
 
             for (int i = 1; i < 13; i++)
             {
@@ -102,54 +182,83 @@ public class GameController : Photon.MonoBehaviour {
         }
 	}
 
-    void DetermineTurnOrder()
-    {
-        bigBlind = Random.Range(0, playerCount - 1);
-        // Make sure we don't exceed the number of players
-        // For now we allow there to be only one player.
-        firstPlayer = (bigBlind + 1) % playerCount;
-    }
-
     [PunRPC]
     public void initGame()
     {
-        Debug.Log("Initializing game state...");
-   
         //this.photonView.RPC("InitDeck", PhotonTargets.All);
         //InitDeck();
         //Random.seed = System.DateTime.Now.Millisecond;
-        this.photonView.RPC("InitSeed", PhotonTargets.All);
+        //this.photonView.RPC("InitSeed", PhotonTargets.All);
         // Probably better to just make the deck locally and then sync results?
-        this.photonView.RPC("Shuffle", PhotonTargets.All, deck, Random.seed);
+        //this.photonView.RPC("Shuffle", PhotonTargets.All, deck, Random.seed);
         //Shuffle(deck);
         //DealOpeningHand();
         //DealFlop();
         // Randomly determine first player, player "left" of big blind.
         //DetermineTurnOrder();
 
+        Debug.Log("Initializing game state...");
+        // Update random seed so it's different each time we start a new game.
+        Random.seed = System.DateTime.Now.Millisecond;
+        InitDeck();
+        Shuffle(deck, Random.seed);
+        ChooseDealer();
     }
 
-    void DealOpeningHand()
+    void DealOpeningHand(Poker.Player _player)
     {
-        // All players draw initial drawing hand (two cards)
-        /*
-        foreach (Poker.Player player in players)
+        if (PhotonNetwork.player.ID == 1)
         {
-            // deal two cards
-            player.hand.Add(Deal(deck));
-            player.hand.Add(Deal(deck));
-            UpdatePlayerHand(player.id);
+            if (deck.Count > 0)
+            {
+                // Grab two cards from the deck
+                Poker.Card card0 = Deal(deck);
+                Vector3 serializableCard0 = new Vector3((int)card0.suit, (int)card0.rank, (int)card0.color);
+                Poker.Card card1 = Deal(deck);
+                Vector3 serializableCard1 = new Vector3((int)card1.suit, (int)card1.rank, (int)card1.color);
+
+                _player.photonView.RPC("DealHand", PhotonTargets.All, serializableCard0, serializableCard1);
+            }
+            else
+            {
+                Debug.Log("Deck is empty?");
+                Debug.Break();
+            }
         }
-        */
+        else
+        {
+
+        }
+
     }
 
-    void DealFlop()
+    void DealFlop(int _num)
     {
-        pool.Add(Deal(deck));
-        pool.Add(Deal(deck));
-        pool.Add(Deal(deck));
+        for (int i = 0; i < _num; i++)
+        {
+            Poker.Card card = Deal(deck);
+            Vector3 serializableCard = new Vector3((int)card.suit, (int)card.rank, (int)card.color);
+
+            // RPC Call, Sync to other players
+            this.photonView.RPC("DealFlopRPC", PhotonTargets.Others, serializableCard);
+
+            // Add to local pool
+            pool.Add(card);
+        }
         UpdateFlop();
     }
+
+    [PunRPC]
+    void DealFlopRPC(Vector3 _card)
+    {
+        // Add to local pool from serialized card
+        Poker.Card card = new Poker.Card((Poker.Suit)_card.x, (Poker.Rank)_card.y, (Poker.Colour)_card.z);
+        pool.Add(card);
+
+        // Update local flop
+        UpdateFlop();
+    }
+
 
     void RoundManager()
     {
@@ -248,24 +357,125 @@ public class GameController : Photon.MonoBehaviour {
 
     void UpdateFlop()
     {
-        for (int i = 0; i < pool.Count; i++)
+        //for (int i = 0; i < pool.Count; i++)
+        //{
+        int counter = 0;
+        foreach (Poker.Card _card in pool)
         {
-            flopPositions[i].gameObject.SetActive(true);
-            flopPositions[i].gameObject.GetComponent<SpriteRenderer>().sprite =
-            cardSprites[((int)pool[i].suit * 13) + (int)pool[i].rank - 1];
+            GameObject mCard = null;
+            try
+            {
+                mCard = flopPositions[counter].Find("PlayingCard").Find("Card").gameObject;
+            }
+            catch (System.Exception e)
+            {
+                Debug.Log("error: " + e.Message + ", " + counter);
+                Debug.Break();
+            }
+            
+            // initialize card texture
+            Sprite sprite = this.cardSprites[((int)_card.suit * 13) + (int)_card.rank - 1];
+            Texture2D _tex = new Texture2D((int)sprite.rect.width, (int)sprite.rect.height);
+
+            _tex.SetPixels(sprite.texture.GetPixels((int)sprite.textureRect.x,
+                                        (int)sprite.textureRect.y,
+                                        (int)sprite.textureRect.width,
+                                        (int)sprite.textureRect.height));
+            _tex.Apply();
+            mCard.GetComponent<Renderer>().materials[0].mainTexture = _tex;
+            mCard.GetComponent<Renderer>().materials[0].SetTexture("_EmissionMap", _tex);
+            flopPositions[counter].gameObject.SetActive(true);
+            counter++;
+        }
+
+        //}
+    }
+
+    [PunRPC]
+    public void Turn()
+    {
+        if (PhotonNetwork.isMasterClient)
+        {
+            if (!hasDealt)
+            {
+                switch (turnCount)
+                {
+                    case 1:
+                        // The Flop
+                        DealFlop(3);
+                        break;
+                    case 2:
+                        // The Turn
+                        DealFlop(1);
+                        break;
+                    case 3:
+                        // The River
+                        DealFlop(1);
+                        break;
+                    default:
+                        break;
+                }
+
+                hasDealt = true;
+            }
+
+
+            players[currentPlayerID - 1].photonView.RPC("startTurn", PhotonTargets.All);
+        }
+    }
+
+    void ClearHighlights()
+    {
+        foreach (Poker.Player _player in players)
+        {
+            _player.photonView.RPC("ClearTurnHighlight", PhotonTargets.All);
+        }
+        
+    }
+
+    public void OnEndTurn()
+    {
+        players[currentPlayerID - 1].hasPlayed = true;
+        players[currentPlayerID - 1].photonView.RPC("toggleHasPlayed", PhotonTargets.All, true);        
+        ClearHighlights();
+        Next();
+        Turn();
+    }
+
+    [PunRPC]
+    public void Next()
+    {
+        if (PhotonNetwork.isMasterClient)
+        {
+
+            Debug.Log("Is master Client.");
+            currentPlayerID = (currentPlayerID + 1) % PhotonNetwork.playerList.Length;
+            if (currentPlayerID == 0)
+                currentPlayerID = PhotonNetwork.playerList.Length;
+
+            // aka before they start their turn
+            if (players[currentPlayerID - 1].hasPlayed)
+            {
+                foreach (Poker.Player _player in players)
+                {
+                    _player.photonView.RPC("toggleHasPlayed", PhotonTargets.All, false);
+                }
+
+                turnCount++;
+                hasDealt = false;
+            }
         }
     }
 
     [PunRPC]
     public void AddPlayer()
     {
-        
-        //this.players.Add(_player);
         playerCount++;
     }
 
     public void AddAllPlayers()
     {
+        initGame();
         GameObject.Find("Canvas").transform.FindChild("btnStart").gameObject.SetActive(false);
         Debug.Log("Add all players...");
         Debug.Log("Poker.Player Count: " + PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)).Count);
@@ -279,13 +489,19 @@ public class GameController : Photon.MonoBehaviour {
         foreach (GameObject _player in PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)))
         {
             playerIDs.Add(_player.GetComponent<Poker.Player>().id);
-        }
+        }        
 
         foreach (GameObject _player in PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)))
         {
             players.Add(_player.GetComponent<Poker.Player>());
-            _player.GetComponent<Poker.Player>().photonView.RPC("DealHandTest", PhotonTargets.All, playerIDs.ToArray());
+            DealOpeningHand(_player.GetComponent<Poker.Player>());
+            _player.GetComponent<Poker.Player>().photonView.RPC("DealHandTest", PhotonTargets.All, playerIDs.ToArray());        
         }
+
+        List<Poker.Player> temp = players.OrderBy(go=>go.id).ToList();
+        players = temp;
+
+        Turn();
     }
 
     public void AddPlayer(Poker.Player _player)
@@ -295,10 +511,7 @@ public class GameController : Photon.MonoBehaviour {
 
     void OnGUI()
     {
-        if (deck.Count > 0)
-            GUI.Label(new Rect(10, 20, 200, 200), this.deck[0].rank.ToString());
-        else
-            GUI.Label(new Rect(10, 20, 200, 200), deck.Count.ToString());
+        GUI.Label(new Rect(0, 120, 200, 200), "" + mString);
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)

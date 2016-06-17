@@ -1,5 +1,12 @@
 ﻿namespace Poker
 {
+    public enum Colour
+    {
+        black = 0,
+        red,
+        NUM_COLOURS
+    };
+
     public enum Suit
     {
         spades = 0,
