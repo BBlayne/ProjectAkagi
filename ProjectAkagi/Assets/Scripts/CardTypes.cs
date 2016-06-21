@@ -30,8 +30,8 @@
         nine,
         ten,
         jack,
-        queen,
         king,
+        queen,
         NUM_RANKS
     };
 }

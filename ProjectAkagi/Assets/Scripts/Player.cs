@@ -8,10 +8,12 @@ namespace Poker
 {
     public class Player : Photon.MonoBehaviour {
         public List<Poker.Card> hand = new List<Card>();
+
+
         Vector2 scrollPosition;
         Touch touch;
         bool flag = false;
-        public int wallet = 0;      
+        public int wallet = 500;      
         public int id;
         float initX = 0;
         float initY = 0;
@@ -44,6 +46,9 @@ namespace Poker
         public bool hasPlayed = false;
         public bool hasFolded = false;
 
+        public bool hasCalled = false;
+        public bool hasBet = false;
+
         Animator cardAnim0;
         Animator cardAnim1;
 
@@ -51,7 +56,7 @@ namespace Poker
         private Vector3 playerPos;
 
         Vector3 flopPos;
-        GameObject slider;
+        SliderButtons slider;
         GameObject txtBet;
 
         public bool isPeeking = false;
@@ -86,22 +91,111 @@ namespace Poker
         float duration = 1.15f;
         float timer = 1.0f;
 
+        // Private Variables
+        RectTransform playerBetAmountRT;
+        Slot slot1;
+
         public void CallHandler()
         {
-            gameMaster.photonView.RPC("CallHandler", PhotonTargets.All);
+            slider.mBetButton.SetActive(false);            
             ToggleSliderButtons(false);
+            slider.mSlider.SetActive(false);
+            this.photonView.RPC("UpdateWallet", PhotonTargets.All, -(int)slider.mSlider.GetComponent<Slider>().value);
+            if (gameMaster.playerSlots[slotID].chips.gameObject.GetActive() && isBetting)
+            {
+                this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged", false);
+                SetLocalGlowEffectChips("Untagged", false);
+                this.photonView.RPC("setIsBetting", PhotonTargets.All, false);
+                this.photonView.RPC("setBettingUI", PhotonTargets.Others, false);
+                StartCoroutine(PlayChipSFX());
+            }
+            this.photonView.RPC("setHasCalled", PhotonTargets.All, true);
+            gameMaster.photonView.RPC("CallHandler", PhotonTargets.All);
+        }
+
+        public void CheckHandler()
+        {            
+            ToggleSliderButtons(false);
+            slider.mSlider.SetActive(false);
+            if (gameMaster.playerSlots[slotID].chips.gameObject.GetActive() && isBetting)
+            {
+                this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged", false);
+                SetLocalGlowEffectChips("Untagged", false);
+                this.photonView.RPC("setIsBetting", PhotonTargets.All, false);
+                this.photonView.RPC("setBettingUI", PhotonTargets.Others, false);
+                StartCoroutine(PlayChipSFX());
+            }
+            this.photonView.RPC("setHasCalled", PhotonTargets.All, true);
+            gameMaster.photonView.RPC("CheckHandler", PhotonTargets.All);
+        }
+
+        public void BetHandler()
+        {            
+            slider.mBetButton.SetActive(false);
+            slider.mSlider.SetActive(false);
+            ToggleSliderButtons(false);
+            this.photonView.RPC("UpdateWallet", PhotonTargets.All, -(int)slider.mSlider.GetComponent<Slider>().value);
+            if (gameMaster.playerSlots[slotID].chips.gameObject.GetActive() && isBetting)
+            {
+                this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged", false);
+                SetLocalGlowEffectChips("Untagged", false);
+                this.photonView.RPC("setIsBetting", PhotonTargets.All, false);
+                this.photonView.RPC("setBettingUI", PhotonTargets.Others, false);
+                StartCoroutine(PlayChipSFX());
+            }
+            this.photonView.RPC("setHasBet", PhotonTargets.All, true);
+            this.photonView.RPC("setHasCalled", PhotonTargets.All, true);
+            gameMaster.photonView.RPC("BetHandler", PhotonTargets.All);
         }
 
         public void RaiseHandler()
         {
-            gameMaster.photonView.RPC("RaiseHandler", PhotonTargets.All);
+            slider.mBetButton.SetActive(false);            
             ToggleSliderButtons(false);
+            slider.mSlider.SetActive(false);
+            this.photonView.RPC("UpdateWallet", PhotonTargets.All, -(int)slider.mSlider.GetComponent<Slider>().value);
+            if (gameMaster.playerSlots[slotID].chips.gameObject.GetActive() && isBetting)
+            {
+                this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged", false);
+                SetLocalGlowEffectChips("Untagged", false);
+                this.photonView.RPC("setIsBetting", PhotonTargets.All, false);
+                this.photonView.RPC("setBettingUI", PhotonTargets.Others, false);
+                StartCoroutine(PlayChipSFX());
+            }
+            this.photonView.RPC("setHasBet", PhotonTargets.All, true);
+            this.photonView.RPC("setHasCalled", PhotonTargets.All, true);
+            gameMaster.photonView.RPC("RaiseHandler", PhotonTargets.All, (int)slider.mSlider.GetComponent<Slider>().value);
         }
 
         public void AllInHandler()
         {
-            gameMaster.photonView.RPC("AllInHandler", PhotonTargets.All);
+            slider.mBetButton.SetActive(false);
             ToggleSliderButtons(false);
+            slider.mSlider.SetActive(false);
+            this.photonView.RPC("UpdateWallet", PhotonTargets.All, -(int)slider.mSlider.GetComponent<Slider>().maxValue);
+            if (gameMaster.playerSlots[slotID].chips.gameObject.GetActive() && isBetting)
+            {
+                this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged", false);
+                SetLocalGlowEffectChips("Untagged", false);
+                this.photonView.RPC("setIsBetting", PhotonTargets.All, false);
+                this.photonView.RPC("setBettingUI", PhotonTargets.Others, false);
+                StartCoroutine(PlayChipSFX());
+            }
+            this.photonView.RPC("setHasBet", PhotonTargets.All, true);
+            this.photonView.RPC("setHasCalled", PhotonTargets.All, true);
+            gameMaster.photonView.RPC("AllInHandler", PhotonTargets.All, (int)slider.mSlider.GetComponent<Slider>().maxValue);
+        }
+
+        [PunRPC]
+        void setHasBet(bool _status)
+        {
+            this.hasBet = _status;
+        }
+
+        [PunRPC]
+        void setHasCalled(bool _status)
+        {
+            this.hasCalled = _status;
         }
 
         [PunRPC]
@@ -121,26 +215,29 @@ namespace Poker
         {
             if (this.photonView.isMine)
             {
-                Debug.Log("Clearing highlights...");
-                Transform _names = GameObject.Find("Canvas").transform.Find("playerNametags");
-                foreach (Transform child in _names)
+                    // New version
+                foreach (TextSlot _slot in gameMaster.playerNameElements)
                 {
-                    child.Find("Plane").gameObject.tag = "Untagged";
+                    _slot.highlight.tag = "Untagged";
                 }
-                Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+                gameMaster.mHighlighter.RefreshHighlight();
             }
+
         }
 
         void ToggleSliderButtons(bool _flag)
         {
-            slider.transform.Find("Call").gameObject.GetComponent<Button>().interactable = _flag;
-            slider.transform.Find("AllIn").gameObject.GetComponent<Button>().interactable = _flag;
-            slider.transform.Find("Handle Slide Area").Find("Handle").Find("Raise").gameObject.GetComponent<Button>().interactable = _flag;
+            slider.callButton.GetComponent<Button>().interactable = _flag;
+            slider.allInButton.GetComponent<Button>().interactable = _flag;
+            slider.raiseButton.GetComponent<Button>().interactable = _flag;
+            slider.mCheckButton.GetComponent<Button>().interactable = _flag;
         }
 
         [PunRPC]
-        void startTurn()
+        void startTurn(int minimumBetAmount, bool hasBet)
         {
+            this.photonView.RPC("setHasCalled", PhotonTargets.All, false);
+            this.photonView.RPC("setHasBet", PhotonTargets.All, false);
             // assume ID is known.
             int _slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
             // Raaaaaaging
@@ -148,18 +245,51 @@ namespace Poker
                 _slotID += 6; // max number of players.
 
             // Setting the glow effect to indicate the current player
-            GameObject _nameUI = GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject;
-            _nameUI.transform.Find("Plane").gameObject.tag = "Occludee";
-            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+            //GameObject _nameUI = GameObject.Find("Canvas").transform.Find("playerNametags").Find("txtSlot" + _slotID).gameObject;            
+            //_nameUI.transform.Find("Plane").gameObject.tag = "Occludee";
+            gameMaster.playerNameElements[_slotID].highlight.tag = "Occludee";
+            gameMaster.mHighlighter.RefreshHighlight();
+
+            if (wallet > 0)
+            {
+                slider.mSlider.GetComponent<Slider>().maxValue = wallet;
+
+                if (slider.mSlider.GetComponent<Slider>().maxValue < minimumBetAmount)
+                    slider.mSlider.GetComponent<Slider>().minValue = slider.mSlider.GetComponent<Slider>().maxValue;
+                else
+                    slider.mSlider.GetComponent<Slider>().minValue = minimumBetAmount;
+            }
+            else
+            {
+                gameMaster.sliderButtons.raiseButton.GetComponent<Button>().interactable = false;
+                slider.mSlider.GetComponent<Slider>().maxValue = 0;
+                slider.mSlider.GetComponent<Slider>().minValue = 0;
+            }
+                
 
             if (this.photonView.isMine)
             {
                 // If the player object belongs to the client.
                 ToggleSliderButtons(true);
-            }
-            else
-            {
+                slider.mSlider.SetActive(true);
+                setIsBetting(true);
+                txtBet.SetActive(true);
+                this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Occludee", true);
+                SetGlowEffectChips("Occludee", true);
+                this.photonView.RPC("setIsBetting", PhotonTargets.All, true);
+                this.photonView.RPC("setBettingUI", PhotonTargets.Others, true);
 
+                if (hasBet)
+                {
+                    slider.mCheckButton.SetActive(false);
+                    slider.callButton.SetActive(true);
+                }
+                else
+                {
+                    slider.mCheckButton.SetActive(true);
+                    slider.callButton.SetActive(false);
+                }
+               
             }
         }
 
@@ -172,28 +302,34 @@ namespace Poker
             if (_slotID < 0)
                 _slotID += 6; // max number of players.
 
-            Transform _slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID);
-            Transform _chips = _slot.Find("mChips");
+            // Our slots go Last Player - First Player - Second Player - ...
+            // So use out "slotID" to find the correct slot, which has stored
+            // the game objects we wish to interact with.
+            Slot _slot = gameMaster.playerSlots[_slotID];
 
-            this.mTxtBetAmt = GameObject.Find("Canvas").transform.Find("playerBets").transform.Find("txtSlot" + _slotID).gameObject;
+            // Our slots go Last Player - First Player - Second Player - ...
+            // So use out "slotID" to find the correct slot, which has stored
+            // the game object that has the text element we wish to interact.
+            this.mTxtBetAmt = gameMaster.betTextSlots[_slotID];
 
-            Vector3 pos = _chips.Find("uiPos").transform.position;
+            // Find the world coordinates of the position
+            // of where we wish the bet text to go.
+            Vector3 pos = _slot.uiPos.position; 
 
-            RectTransform rtUI;
-            RectTransform canvasRT;
-
-            rtUI = this.mTxtBetAmt.GetComponent<RectTransform>();
-            canvasRT = GameObject.Find("Canvas").GetComponent<Canvas>().GetComponent<RectTransform>();
+            // Cache it's rect transform.
+            playerBetAmountRT = this.mTxtBetAmt.GetComponent<RectTransform>();
 
 
             // Calculating position of the UI element
             Vector2 ViewportPosition = Camera.main.WorldToViewportPoint(pos);
             Vector2 WorldObject_ScreenPosition = new Vector2(
-             ((ViewportPosition.x * canvasRT.sizeDelta.x) - (canvasRT.sizeDelta.x * 0.5f)),
-             ((ViewportPosition.y * canvasRT.sizeDelta.y) - (canvasRT.sizeDelta.y * 0.5f)));
+             ((ViewportPosition.x * gameMaster.mCanvasRT.sizeDelta.x) - (gameMaster.mCanvasRT.sizeDelta.x * 0.5f)),
+             ((ViewportPosition.y * gameMaster.mCanvasRT.sizeDelta.y) - (gameMaster.mCanvasRT.sizeDelta.y * 0.5f)));
 
-            rtUI.anchoredPosition = WorldObject_ScreenPosition;
+            // Assign the new achored position.
+            playerBetAmountRT.anchoredPosition = WorldObject_ScreenPosition;
 
+            // Make it visible.
             this.mTxtBetAmt.SetActive(_state);
         }
 
@@ -201,45 +337,49 @@ namespace Poker
         void SetId(int _id)
         {            
             id = (_id % 6); // 6 is max players, we need to loop back around as 6th player equals 0th slot, so slot0 is pos 6.
-            slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + id);
-            localSlot = GameObject.Find("PlayerSlotPositions").transform.Find("slot1");
-            chips = slot.Find("mChips");
-            originalCardPos = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("PlayerHandPosition").transform.position;
-            cards = localSlot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");            
-            localCards = localSlot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+            slot = gameMaster.playerSlots[id].gameObject.transform; //Object.Find("PlayerSlotPositions").transform.Find("slot" + id);
+            slot1 = gameMaster.playerSlots[1];
+            //localSlot = GameObject.Find("PlayerSlotPositions").transform.Find("slot1");
+            //chips = slot.Find("mChips");
+            chips = slot1.chips;
+            //originalCardPos = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("PlayerHandPosition").transform.position;
+            originalCardPos = slot1.PlayerHandPosition.position;
+            //cards = localSlot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");            
+            cards = slot1.PlayerHand;
+            //localCards = localSlot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
             targetLocation = originalCardPos;
-            playerPos = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.position;
+            //playerPos = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.position;
+            playerPos = slot1.gameObject.transform.position;
             playerPos = new Vector3(playerPos.x, 0, playerPos.z);
-            foldPoint = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("foldPoint").transform.position;
-            flopPos = GameObject.Find("Flop").transform.position;
-            
-            slider = GameObject.Find("Canvas").transform.Find("BettingSlider").transform.Find("scrollBet").gameObject;
-            txtBet = slider.transform.Find("Handle Slide Area").Find("Handle").Find("txtBet").gameObject;
-            peekPoint = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").Find("peekPoint");
+            //foldPoint = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("foldPoint").transform.position;
+            foldPoint = slot1.foldPoint.position;
+            //flopPos = GameObject.Find("Flop").transform.position;
+            flopPos = gameMaster.FlopPos.position;
 
-            Transform slot1 = GameObject.Find("PlayerSlotPositions").transform.Find("slot1");
-            Transform _cards = slot1.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+            slider = gameMaster.sliderButtons;
+            slider.mSlider.GetComponent<Slider>().maxValue = wallet;
+            txtBet = slider.mBetTextAmount;
+            //peekPoint = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").Find("peekPoint");
+            peekPoint = slot1.peekPoint;
 
-            cardAnim0 = _cards.transform.Find("Card0").Find("PlayingCard").gameObject.GetComponent<Animator>();
-            cardAnim1 = _cards.transform.Find("Card1").Find("PlayingCard").gameObject.GetComponent<Animator>();
+            //Transform slot1 = GameObject.Find("PlayerSlotPositions").transform.Find("slot1");
+
+            //Transform _cards = slot1.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+
+            cardAnim0 = slot1.mCardRoot0.GetComponent<Animator>();
+            cardAnim1 = slot1.mCardRoot1.GetComponent<Animator>();
             this.enabled = true;
 
             int _slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
             if  (_slotID == 1)
             {
                 // Slider handling
-
-                GameObject mCall = slider.transform.Find("Call").gameObject;
-                mCall.GetComponent<Button>().onClick.AddListener(() => { CallHandler(); });
-
-                GameObject mAllIn = slider.transform.Find("AllIn").gameObject;
-                mAllIn.GetComponent<Button>().onClick.AddListener(() => { AllInHandler(); });
-
-                GameObject mRaise = slider.transform.Find("Handle Slide Area").Find("Handle").Find("Raise").gameObject;
-                mRaise.GetComponent<Button>().onClick.AddListener(() => { RaiseHandler(); });
+                slider.callButton.GetComponent<Button>().onClick.AddListener(() => { CallHandler(); });
+                slider.allInButton.GetComponent<Button>().onClick.AddListener(() => { AllInHandler(); });
+                slider.raiseButton.GetComponent<Button>().onClick.AddListener(() => { RaiseHandler(); });
+                slider.mCheckButton.GetComponent<Button>().onClick.AddListener(() => { CheckHandler(); });
+                slider.mBetButton.GetComponent<Button>().onClick.AddListener(() => { BetHandler(); });
             }
-
-
         }
 
         [PunRPC]
@@ -251,46 +391,55 @@ namespace Poker
             if (_slotID < 0)
                 _slotID += 6; // max number of players.
 
-            slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID);
-            chips = slot.Find("mChips");
+            //slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID);
 
-            this.mTxtBetAmt = GameObject.Find("Canvas").transform.Find("playerBets").transform.Find("txtSlot"+ _slotID).gameObject;
+            //chips = slot.Find("mChips");
 
-            Vector3 pos = chips.Find("uiPos").transform.position;
+            //this.mTxtBetAmt = GameObject.Find("Canvas").transform.Find("playerBets").transform.Find("txtSlot"+ _slotID).gameObject;
+            this.mTxtBetAmt = gameMaster.betTextSlots[_slotID];
+
+            Vector3 pos = slot1.uiPos.position;
             Vector3 screenPos = Camera.main.WorldToViewportPoint(pos);
-            screenPos.x *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.width;
-            screenPos.y *= GameObject.Find("Canvas").GetComponent<RectTransform>().rect.height;
+            screenPos.x *= gameMaster.mCanvasRT.rect.width;
+            screenPos.y *= gameMaster.mCanvasRT.rect.height;
             this.mTxtBetAmt.GetComponent<Text>().text = this.betAmount.ToString();
 
-            Transform playerPosition = slot.Find("player");
+            //Transform playerPosition = slot.Find("player");
+            Transform playerPosition = this.transform;
             Vector3 playerPos = playerPosition.position;
 
-            GameObject mPlayerNameTag = GameObject.Find("Canvas").transform.Find("playerNametags").
-                Find("txtSlot" + _slotID).Find("text").gameObject;
+            //GameObject mPlayerNameTag = GameObject.Find("Canvas").transform.Find("playerNametags").
+            //  Find("txtSlot" + _slotID).Find("text").gameObject;
 
-            GameObject mPlayerName = GameObject.Find("Canvas").transform.Find("playerNametags").
-                Find("txtSlot" + _slotID).gameObject;
+            GameObject mPlayerNameTag = gameMaster.playerNameElements[_slotID].gameObject;
+
+            gameMaster.playerWallets[_slotID].SetActive(true);
+            gameMaster.playerWalletTexts[_slotID].text = wallet.ToString();
+            //GameObject mPlayerName = GameObject.Find("Canvas").transform.Find("playerNametags").
+            //  Find("txtSlot" + _slotID).gameObject;
+
+
 
             RectTransform rtUI;
-            RectTransform canvasRT;
+            //RectTransform canvasRT;
 
-            rtUI = mPlayerNameTag.transform.parent.gameObject.GetComponent<RectTransform>();
-            canvasRT = GameObject.Find("Canvas").GetComponent<Canvas>().GetComponent<RectTransform>();
+            rtUI = mPlayerNameTag.GetComponent<RectTransform>();
+            //canvasRT = GameObject.Find("Canvas").GetComponent<Canvas>().GetComponent<RectTransform>();
 
 
             // Calculating position of the UI element
             Vector2 ViewportPosition = Camera.main.WorldToViewportPoint(playerPosition.position);
             Vector2 WorldObject_ScreenPosition = new Vector2(
-             ((ViewportPosition.x * canvasRT.sizeDelta.x) - (canvasRT.sizeDelta.x * 0.5f)),
-             ((ViewportPosition.y * canvasRT.sizeDelta.y) - (canvasRT.sizeDelta.y * 0.5f)));
+             ((ViewportPosition.x * gameMaster.mCanvasRT.sizeDelta.x) - (gameMaster.mCanvasRT.sizeDelta.x * 0.5f)),
+             ((ViewportPosition.y * gameMaster.mCanvasRT.sizeDelta.y) - (gameMaster.mCanvasRT.sizeDelta.y * 0.5f)));
 
             rtUI.anchoredPosition = WorldObject_ScreenPosition;
-            
-            mPlayerNameTag.GetComponent<Text>().text = "player" + this.id;
-            mPlayerNameTag.GetComponent<Text>().color = this.GetComponent<Renderer>().material.color;
-            mPlayerNameTag.transform.parent.gameObject.SetActive(true);
 
-            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+            gameMaster.playerNameElements[_slotID].nameTag.GetComponent<Text>().text = "player" + this.id;
+            gameMaster.playerNameElements[_slotID].nameTag.GetComponent<Text>().color = this.GetComponent<Renderer>().material.color;
+            mPlayerNameTag.SetActive(true);
+
+            gameMaster.mHighlighter.RefreshHighlight();
 
         }
 
@@ -303,17 +452,19 @@ namespace Poker
             if (_slotID < 0)
                 _slotID += 6; // max number of players.
 
-            GameObject Eyes = GameObject.Find("Canvas").transform.Find("PeekingEyes").transform.Find("IsPeeking" + _slotID).gameObject;
-            Vector3 _pos = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID).Find("PlayerHandPosition").position;
+            //GameObject Eyes = GameObject.Find("Canvas").transform.Find("PeekingEyes").transform.Find("IsPeeking" + _slotID).gameObject;
+            GameObject Eyes = gameMaster.playerSlots[_slotID].mEyes;
+
+            //Vector3 _pos = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID).Find("PlayerHandPosition").position;
+            Vector3 _pos = gameMaster.playerSlots[_slotID].PlayerHandPosition.position;
 
             RectTransform rtUI = Eyes.GetComponent<RectTransform>();
-            RectTransform canvasRT = GameObject.Find("Canvas").GetComponent<Canvas>().GetComponent<RectTransform>();
 
             // Calculating position of the UI element
             Vector2 ViewportPosition = Camera.main.WorldToViewportPoint(_pos);
             Vector2 WorldObject_ScreenPosition = new Vector2(
-             ((ViewportPosition.x * canvasRT.sizeDelta.x) - (canvasRT.sizeDelta.x * 0.5f)),
-             ((ViewportPosition.y * canvasRT.sizeDelta.y) - (canvasRT.sizeDelta.y * 0.5f)));
+             ((ViewportPosition.x * gameMaster.mCanvasRT.sizeDelta.x) - (gameMaster.mCanvasRT.sizeDelta.x * 0.5f)),
+             ((ViewportPosition.y * gameMaster.mCanvasRT.sizeDelta.y) - (gameMaster.mCanvasRT.sizeDelta.y * 0.5f)));
 
             rtUI.anchoredPosition = WorldObject_ScreenPosition;
 
@@ -335,21 +486,41 @@ namespace Poker
             if (slotID < 0)
                 slotID += 6; // max number of players.
 
-            Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
-            Transform _cards = slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+            //Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
+            //Transform slot = gameMaster.playerSlots[slotID]
+            //Transform _cards = slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+            //Transform _cards = gameMaster.playerSlots[slotID].PlayerHand;
 
-            _cards.transform.Find("Card0").Find("PlayingCard").Find("Card").tag = _tag;
-            _cards.transform.Find("Card1").Find("PlayingCard").Find("Card").tag = _tag;
-            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+            //_cards.transform.Find("Card0").Find("PlayingCard").Find("Card").tag = _tag;
+            //_cards.transform.Find("Card1").Find("PlayingCard").Find("Card").tag = _tag;
+
+            gameMaster.playerSlots[slotID].mCardChild0.tag = _tag;
+            gameMaster.playerSlots[slotID].mCardChild1.tag = _tag;
+
+            gameMaster.mHighlighter.RefreshHighlight();
         }
 
         void SetLocalGlowEffectCards(string _tag)
         {
 
-            Transform _cards = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
-            _cards.transform.Find("Card0").Find("PlayingCard").Find("Card").tag = _tag;
-            _cards.transform.Find("Card1").Find("PlayingCard").Find("Card").tag = _tag;
-            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+            //Transform _cards = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+            //_cards.transform.Find("Card0").Find("PlayingCard").Find("Card").tag = _tag;
+            //_cards.transform.Find("Card1").Find("PlayingCard").Find("Card").tag = _tag;
+            slot1.mCardChild0.tag = _tag;
+            slot1.mCardChild1.tag = _tag;
+            gameMaster.mHighlighter.RefreshHighlight();
+        }
+
+        [PunRPC]
+        void UpdateWallet(int _wallet)
+        {
+            slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
+            // Raaaaaaging
+            if (slotID < 0)
+                slotID += 6; // max number of players.
+
+            wallet += _wallet;
+            gameMaster.playerWalletTexts[slotID].text = wallet.ToString();
         }
 
         [PunRPC]
@@ -360,30 +531,44 @@ namespace Poker
             if (slotID < 0)
                 slotID += 6; // max number of players.
 
-            Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
-            Transform _chips = slot.transform.Find("mChips");
-            _chips.Find("Chips0").tag = _tag;
-            _chips.Find("Chips1").tag = _tag;
-            _chips.Find("Chips2").tag = _tag;
-            _chips.gameObject.GetComponent<Animator>().SetBool("IsClicked", _isClicked);
-            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+            //Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
+            //Transform _chips = slot.transform.Find("mChips");
+
+            foreach (GameObject _chip in gameMaster.playerSlots[slotID].mHighlightChips)
+            {
+                _chip.tag = _tag;
+            }
+            //_chips.Find("Chips0").tag = _tag;
+            //_chips.Find("Chips1").tag = _tag;
+            //_chips.Find("Chips2").tag = _tag;
+            //_chips.gameObject.GetComponent<Animator>().SetBool("IsClicked", _isClicked);
+            gameMaster.playerSlots[slotID].chips.gameObject.GetComponent<Animator>().SetBool("IsClicked", _isClicked);
+            gameMaster.mHighlighter.RefreshHighlight();
         }
 
         void SetLocalGlowEffectChips(string _tag, bool _isClicked)
         {
-            Transform _chips = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("mChips");
-            _chips.Find("Chips0").tag = _tag;
-            _chips.Find("Chips1").tag = _tag;
-            _chips.Find("Chips2").tag = _tag;
-            _chips.gameObject.GetComponent<Animator>().SetBool("IsClicked", _isClicked);
-            Camera.main.GetComponent<HighlightsPostEffect>().RefreshHighlight();
+            //Transform _chips = GameObject.Find("PlayerSlotPositions").transform.Find("slot1").transform.Find("mChips");
+            //_chips.Find("Chips0").tag = _tag;
+            //_chips.Find("Chips1").tag = _tag;
+            //_chips.Find("Chips2").tag = _tag;
+            //_chips.gameObject.GetComponent<Animator>().SetBool("IsClicked", _isClicked);
+
+            foreach (GameObject _chip in slot1.mHighlightChips)
+            {
+                _chip.tag = _tag;
+            }
+            slot1.chips.gameObject.GetComponent<Animator>().SetBool("IsClicked", _isClicked);
+            gameMaster.mHighlighter.RefreshHighlight();
         }
 
         [PunRPC]
         void DealHandTest(int[] players)
-        {            
-            localCards.gameObject.SetActive(true);
-            localSlot.Find("mChips").gameObject.SetActive(true);
+        {
+            //localCards.gameObject.SetActive(true);
+            //localSlot.Find("mChips").gameObject.SetActive(true);
+            slot1.PlayerHand.gameObject.SetActive(true);
+            slot1.chips.gameObject.SetActive(true);
 
             for (int i=0; i < players.Length; i++)
             {
@@ -393,9 +578,13 @@ namespace Poker
                     slotID += 6; // max number of players.
 
                 
-                Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
-                slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand").gameObject.SetActive(true);
-                slot.transform.Find("mChips").gameObject.SetActive(true);
+                //Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);                
+                //slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand").gameObject.SetActive(true);
+                //slot.transform.Find("mChips").gameObject.SetActive(true);
+
+                Slot _slot = gameMaster.playerSlots[slotID];
+                _slot.PlayerHand.gameObject.SetActive(true);
+                _slot.chips.gameObject.SetActive(true);
             }
         }
 
@@ -422,30 +611,19 @@ namespace Poker
         {
             if (hand.Count == 2)
             {
-                GameObject _Card0 = localCards.Find("Card0").Find("PlayingCard").Find("Card").gameObject;
-                GameObject _Card1 = localCards.Find("Card1").Find("PlayingCard").Find("Card").gameObject;
+                //GameObject _Card0 = localCards.Find("Card0").Find("PlayingCard").Find("Card").gameObject;
+                //GameObject _Card1 = localCards.Find("Card1").Find("PlayingCard").Find("Card").gameObject;
 
-                Sprite sprite = gameMaster.cardSprites[((int)hand[0].suit * 13) + (int)hand[0].rank - 1];
-                Texture2D _tex = new Texture2D((int)sprite.rect.width, (int)sprite.rect.height);
-                
-                _tex.SetPixels(sprite.texture.GetPixels((int)sprite.textureRect.x,
-                                         (int)sprite.textureRect.y,
-                                         (int)sprite.textureRect.width,
-                                         (int)sprite.textureRect.height));
-                _tex.Apply();
+                GameObject _Card0 = slot1.mCardChild0;
+                GameObject _Card1 = slot1.mCardChild1;
+
+                Texture2D _tex = gameMaster.cardTextures[((int)hand[0].suit * 13) + (int)hand[0].rank - 1];
                 _Card0.GetComponent<Renderer>().materials[0].mainTexture = _tex;
                 _Card0.GetComponent<Renderer>().materials[0].SetTexture("_EmissionMap", _tex);
 
-                Sprite sprite2 = gameMaster.cardSprites[((int)hand[1].suit * 13) + (int)hand[1].rank - 1];
-                Texture2D _tex2 = new Texture2D((int)sprite2.rect.width, (int)sprite2.rect.height);
-
-                _tex2.SetPixels(sprite2.texture.GetPixels((int)sprite2.textureRect.x,
-                                         (int)sprite2.textureRect.y,
-                                         (int)sprite2.textureRect.width,
-                                         (int)sprite2.textureRect.height));
-                _tex2.Apply();
-                _Card1.GetComponent<Renderer>().materials[0].mainTexture = _tex2;
-                _Card1.GetComponent<Renderer>().materials[0].SetTexture("_EmissionMap", _tex2);
+                _tex = gameMaster.cardTextures[((int)hand[1].suit * 13) + (int)hand[1].rank - 1];
+                _Card1.GetComponent<Renderer>().materials[0].mainTexture = _tex;
+                _Card1.GetComponent<Renderer>().materials[0].SetTexture("_EmissionMap", _tex);
 
             }
             else
@@ -502,15 +680,17 @@ namespace Poker
                 slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
                 //Debug.Log("Slot ID: " + slotID + ", this.id: " + this.id + ", local PlayerID" + PhotonNetwork.player.ID);
                 // 2 - (2 - 1) : 1 % 6 = 1
-                // Raaaaaaging
+                // Meh
                 if (slotID < 0)
                     slotID += 6; // max number of players.
 
-                Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
-                Transform _cards = slot.Find("PlayerHandPosition").transform.Find("PlayerHand");
-                if (localCards != null && _cards != null)
+                //Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
+                Transform _cards = gameMaster.playerSlots[slotID].PlayerHand;
+                //Transform _cards = slot.Find("PlayerHandPosition").transform.Find("PlayerHand");
+                if (slot1 != null && _cards != null)
                 {
                     // Network player, recieve data            
+                    //_cards.localPosition = Vector3.Lerp(_cards.localPosition, this.correctPos, Time.deltaTime * 5);
                     _cards.localPosition = Vector3.Lerp(_cards.localPosition, this.correctPos, Time.deltaTime * 5);
                 }
 
@@ -519,16 +699,14 @@ namespace Poker
                     this.mTxtBetAmt.GetComponent<Text>().text = ((int)Mathf.Floor(Mathf.Lerp(
                        int.Parse(this.mTxtBetAmt.GetComponent<Text>().text), this.betAmount, Time.deltaTime * 5))).ToString();
                 }
-                    
-
-                //txtBet.GetComponent<Text>().text = this.betAmount.ToString();
             }
             else
             {
                 if (this.isBetting)
                 {
-                    Slider sb = slider.GetComponent<Slider>();
-                    this.betAmount = (int)Mathf.Floor(sb.value * 500);
+                    Slider sb = slider.mSlider.GetComponent<Slider>();
+                    //this.betAmount = (int)Mathf.Floor(sb.value * 500);
+                    this.betAmount = (int)Mathf.Floor(sb.value);
                     if (!isPlayingChipSFX)
                     {
                         isPlayingChipSFX = true;
@@ -576,12 +754,14 @@ namespace Poker
                     initY = currentPos.y;
                     initialDistance = (cards.position - peekPoint.position).magnitude;
                     isHeld = true;
-                    slider.SetActive(false);
+                    slider.mSlider.SetActive(false);
                     txtBet.SetActive(false);
                     this.photonView.RPC("SetGlowEffectCards", PhotonTargets.Others, "Occludee");
                     SetLocalGlowEffectCards("Occludee");
                     cardsFlipSFX.Play();
-                    if (localSlot.Find("mChips").gameObject.GetActive() && isBetting)
+                    // Disable chips when peeking at cards?
+                    /*
+                    if (slot1.chips.gameObject.GetActive() && isBetting)
                     {
                         this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged", false);
                         SetLocalGlowEffectChips("Untagged", false);
@@ -589,10 +769,11 @@ namespace Poker
                         this.photonView.RPC("setBettingUI", PhotonTargets.Others, false);
                         StartCoroutine(PlayChipSFX());
                     }
+                    */
                 }
                 else if (Physics.Raycast(ray, out hit) && hit.transform.tag == "player0" && (hit.transform.gameObject.layer == LayerMask.NameToLayer("chips")))
                 {
-                    slider.SetActive(true);
+                    slider.mSlider.SetActive(true);
                     txtBet.SetActive(true);
                     this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Occludee", true);
                     SetGlowEffectChips("Occludee", true);
@@ -605,15 +786,16 @@ namespace Poker
                 }
                 else if (hit.transform.gameObject.layer == LayerMask.NameToLayer("Default") && EventSystem.current.currentSelectedGameObject == null)
                 {
-                    slider.SetActive(false);
+                    slider.mSlider.SetActive(false);
                     txtBet.SetActive(false);
                     slotID = (this.id - (PhotonNetwork.player.ID - 1)) % 6;
                     // Raaaaaaging
                     if (slotID < 0)
                         slotID += 6; // max number of players.
-                    Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
-                    Transform _cards = slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
-                    if (localSlot.Find("mChips").gameObject.GetActive() && isBetting)
+
+                    //Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
+                    //Transform _cards = slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+                    if (gameMaster.playerSlots[slotID].chips.gameObject.GetActive() && isBetting)
                     {
                         this.photonView.RPC("SetGlowEffectChips", PhotonTargets.Others, "Untagged", false);
                         SetLocalGlowEffectChips("Untagged", false);
@@ -672,9 +854,10 @@ namespace Poker
                 // Raaaaaaging
                 if (slotID < 0)
                     slotID += 6; // max number of players.
-                Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
-                Transform _cards = slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
-                if (_cards.gameObject.GetActive())
+                //Transform slot = GameObject.Find("PlayerSlotPositions").transform.Find("slot" + slotID);
+
+                //Transform _cards = slot.transform.Find("PlayerHandPosition").transform.Find("PlayerHand");
+                if (gameMaster.playerSlots[slotID].PlayerHand.gameObject.GetActive())
                 {
                     this.photonView.RPC("SetGlowEffectCards", PhotonTargets.Others, "Untagged");
                     SetLocalGlowEffectCards("Untagged");
@@ -739,12 +922,12 @@ namespace Poker
 
         public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
         {
-            if (localCards != null)
+            if (slot1 != null)
             {
                 if (stream.isWriting)
                 {
                     // We own this player, send other players our data
-                    stream.SendNext(localCards.localPosition);
+                    stream.SendNext(slot1.PlayerHand.localPosition);
                     stream.SendNext(this.betAmount);
                 }
                 else
@@ -771,10 +954,23 @@ namespace Poker
                 // Modulo is negative?
                 if (slotID < 0)
                     slotID += 6; // max number of players.
-                
-                this.transform.SetParent(GameObject.Find("PlayerSlotPositions").transform.Find("slot"+ slotID).transform);
+
+                //this.transform.SetParent(GameObject.Find("PlayerSlotPositions").transform.Find("slot"+ slotID).transform);
+                this.transform.SetParent(gameMaster.playerSlots[slotID].gameObject.transform);
                 this.transform.localPosition = new Vector3(0, 0, 0);
                 this.name = "player";
+            }
+
+        }
+
+        [PunRPC]
+        public void PostBlind()
+        {
+            if (this.photonView.isMine)
+            {
+                slider.mBetButton.SetActive(true);
+                slider.mCheckButton.SetActive(false);
+                slider.callButton.SetActive(false);
             }
 
         }

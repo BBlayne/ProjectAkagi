@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 using System.Linq;
 
 [RequireComponent(typeof(Poker.NetworkManager))]
@@ -9,6 +10,23 @@ public class GameController : Photon.MonoBehaviour {
     public List<Poker.Player> players = new List<Poker.Player>();
     List<Poker.Card> pool = new List<Poker.Card>();
     public Material[] mats;
+    public Slot[] playerSlots;
+    public TextSlot[] playerNameElements;
+    public GameObject[] betTextSlots;
+    public Cards[] flopCards;
+    public Text[] playerWalletTexts;
+    public GameObject[] playerWallets;
+
+    public SliderButtons sliderButtons;
+    public HighlightsPostEffect mHighlighter;
+    public Canvas mCanvas;
+    public RectTransform mCanvasRT;
+    public Transform FlopPos;
+    public GameObject startButton;
+    public Text mPotText;
+
+    public GameObject winnerPanel;
+    public GameObject winnderText;
 
     public int dealerID = 0;        
     public int currentPlayerID;
@@ -18,21 +36,25 @@ public class GameController : Photon.MonoBehaviour {
     public GameObject dealer = null;
 
     public int playerCount = 0;
-    int pot = 0;
+    uint pot = 0;
     public int turnCount = 0;
 
+    private int winnerID = -1;
+
     // Round Variables
-    public bool hasBet = false;
+    public bool hasLastPlayerBet = false;
+    public bool hasLastPlayerCalled = false;
 
     // Transforms
     public List<Transform> playerPositions = new List<Transform>();
     public List<Transform> handPositions = new List<Transform>();
     public List<Transform> flopPositions = new List<Transform>();
 
-    public Sprite[] cardSprites;
+    public Texture2D[] cardTextures;
     public GameObject card;
 
     string mString = "";
+    string winningHand = "";
 
     Poker.NetworkManager netManager;
 
@@ -42,6 +64,7 @@ public class GameController : Photon.MonoBehaviour {
     int lastAmountBetOrRaised = 0;
 
     public bool hasDealt = false;
+    public bool hasCalled = false;
 
     // Use this for initialization
     void Start () {
@@ -56,6 +79,234 @@ public class GameController : Photon.MonoBehaviour {
         //Shuffle(deck);
         //DealOpeningHand();
         //DealFlop();
+        
+        ulong boardMask = HoldemHand.Hand.ParseHand("js ac as 4d 5d");
+        string board = "js ac as 4d 5d";
+
+        // Create hand masks
+        ulong player1Mask = HoldemHand.Hand.ParseHand("ad jc");
+        string player1Hand = "ad jc";
+        ulong player2Mask = HoldemHand.Hand.ParseHand("jd kc");
+        string pool = "js ac as 4d 5d 6c";
+
+        // Create a hand value for each player
+        uint playerHandValue1 = HoldemHand.Hand.Evaluate(boardMask | player1Mask, 7);
+        uint playerHandValue2 = HoldemHand.Hand.Evaluate(boardMask | player2Mask, 7);
+
+        Debug.Log("Player1 has: " + HoldemHand.Hand.HandType(playerHandValue1));
+        Debug.Log("Player2 has: " + HoldemHand.Hand.HandType(playerHandValue2));
+        Debug.Log("Player1 has: " + HoldemHand.Hand.MaskToString(playerHandValue1));
+
+        //ulong totalmask = HoldemHand.Hand.ParseHand("as js ac as 4d 5d 6c");
+        //string name = 
+        //if (HoldemHand.Hand.BitCount(totalmask) < 5 || HoldemHand.Hand.BitCount(totalmask) > 7)
+        //uint hv = HoldemHand.Hand.Evaluate(boardMask);
+        ulong hand = HoldemHand.Hand.ParseHand("js ac as 4d 5d 6c ad");
+        uint hv = HoldemHand.Hand.Evaluate(hand);
+        // Loop through possible 5 card hands
+        foreach (ulong hand5 in HoldemHand.Hand.Hands(0UL, ~hand, 5))
+        {
+            if (HoldemHand.Hand.Evaluate(hand5) == hv)
+            {
+                Debug.Log(HoldemHand.Hand.MaskToString(hand5));
+            }
+            else
+            {
+                Debug.Log("Nope");
+            }
+                
+        }
+
+        /*
+        if (playerHandValue1 > playerHandValue2)
+        {
+            Debug.Log("Player1 wins with: " + HoldemHand.Hand.HandType(playerHandValue1));
+        }
+        else
+        {
+            Debug.Log("Player2 wins with: " + HoldemHand.Hand.HandType(playerHandValue2));
+            HoldemHand.Hand.HandTypes.
+        }
+        */
+    }
+
+    [PunRPC]
+    void UpdatePot(int _pot)
+    {
+        this.pot = (uint)_pot;
+        mPotText.text = _pot.ToString();
+    }
+
+    void EndRound()
+    {
+        winnerID = determineWinner();
+        winnerPanel.SetActive(true);
+        winnderText.GetComponent<Text>().text = "The winner is player " + winnerID + ", with " + winningHand;
+
+        foreach (Poker.Player _potentialWinner in players)
+        {
+            if (_potentialWinner.id == winnerID)
+            {
+                _potentialWinner.photonView.RPC("UpdateWallet", PhotonTargets.All, (int)pot);
+            }
+        }
+        pot = 0;
+
+        this.photonView.RPC("DisplayWinner", PhotonTargets.All, winnerID, winningHand);
+    }
+
+    [PunRPC]
+    void DisplayWinner(int _winner, string _hand)
+    {
+        winningHand = _hand;
+        winnerID = _winner;
+        winnerPanel.SetActive(true);
+        winnderText.GetComponent<Text>().text = "The winner is player " + winnerID + ", with " + _hand;
+        pot = 0;
+    }
+
+    int determineWinner()
+    {
+        List<KeyValuePair<uint, Poker.Player>> handValues = new List<KeyValuePair<uint, Poker.Player>>();
+        Debug.Log("Pool: " + convertHandToString(pool));
+        ulong boardMask = HoldemHand.Hand.ParseHand(convertHandToString(pool));
+        foreach (Poker.Player _player in players)
+        {
+            if (!_player.hasFolded)
+            {
+                Debug.Log("Hand of player" + _player.id + "; " + convertHandToString(_player.hand));
+                ulong handMask = HoldemHand.Hand.ParseHand(convertHandToString(_player.hand));
+                KeyValuePair<uint, Poker.Player> handValue = new KeyValuePair<uint, Poker.Player>(HoldemHand.Hand.Evaluate(boardMask | handMask, 7), _player);
+                handValues.Add(handValue);
+            }
+        }
+
+        handValues.Sort(Comparer);
+
+        switch (HoldemHand.Hand.HandType(handValues[handValues.Count - 1].Key))
+        {
+            case 0:
+                winningHand = "High Card";
+                break;
+            case 1:
+                winningHand = "Pair";
+                break;
+            case 2:
+                winningHand = "Two Pair";
+                break;
+            case 3:
+                winningHand = "Triple";
+                break;
+            case 4:
+                winningHand = "Straight";
+                break;
+            case 5:
+                winningHand = "Flush";
+                break;
+            case 6:
+                winningHand = "Full House";
+                break;
+            case 7:
+                winningHand = "Four of a Kind";
+                break;
+            case 8:
+                winningHand = "Straight Flush";
+                break;
+            default:
+                winningHand = "ERROR";
+                break;
+        }
+
+        return handValues[handValues.Count - 1].Value.id;
+    }
+
+    string convertHandToString(List<Poker.Card> _hand)
+    {
+        string hand = "";
+        int count = 0;
+        foreach (Poker.Card _card in _hand)
+        {
+            if (count > 0)
+            {
+                hand = hand + " ";
+            }
+            switch (_card.rank)
+            {
+                case Poker.Rank.ace:
+                    hand += "a";
+                    break;
+                case Poker.Rank.two:
+                    hand += "2";
+                    break;
+                case Poker.Rank.three:
+                    hand += "3";
+                    break;
+                case Poker.Rank.four:
+                    hand += "4";
+                    break;
+                case Poker.Rank.five:
+                    hand += "5";
+                    break;
+                case Poker.Rank.six:
+                    hand += "6";
+                    break;
+                case Poker.Rank.seven:
+                    hand += "7";
+                    break;
+                case Poker.Rank.eight:
+                    hand += "8";
+                    break;
+                case Poker.Rank.nine:
+                    hand += "9";
+                    break;
+                case Poker.Rank.ten:
+                    hand += "10";
+                    break;
+                case Poker.Rank.jack:
+                    hand += "j";
+                    break;
+                case Poker.Rank.king:
+                    hand += "k";
+                    break;
+                case Poker.Rank.queen:
+                    hand += "q";                    
+                    break;
+            }
+
+            switch (_card.suit)
+            {
+                case Poker.Suit.spades:
+                    hand = hand + "s";
+                    break;
+                case Poker.Suit.hearts:
+                    hand = hand + "h";
+                    break;
+                case Poker.Suit.diamonds:
+                    hand = hand + "d";
+                    break;
+                case Poker.Suit.clubs:
+                    hand = hand + "c";
+                    break;
+            }
+
+            count++;
+        }
+
+        return hand;
+    }
+
+    [PunRPC]
+    void HasRaisedOrBet(int _idToSkip)
+    {
+        foreach (Poker.Player _player in players)
+        {
+            if (_player.id == _idToSkip)
+                continue;
+
+            _player.hasPlayed = false;
+            _player.photonView.RPC("setHasCalled", PhotonTargets.All, false);
+            _player.photonView.RPC("setHasBet", PhotonTargets.All, false);
+        }
     }
 
     [PunRPC]
@@ -64,26 +315,60 @@ public class GameController : Photon.MonoBehaviour {
         if (PhotonNetwork.isMasterClient)
         {
             Debug.Log("CallHandler");
+            pot += (uint)minimumBindAmount;
+            hasLastPlayerCalled = true;
             OnEndTurn();
         }
     }
 
     [PunRPC]
-    public void RaiseHandler()
+    public void CheckHandler()
+    {
+        if (PhotonNetwork.isMasterClient)
+        {
+            Debug.Log("CheckHandler");
+            OnEndTurn();
+        }
+    }
+
+    [PunRPC]
+    public void BetHandler()
+    {
+        if (PhotonNetwork.isMasterClient)
+        {
+            Debug.Log("BetHandler");
+            hasLastPlayerBet = true;
+            pot += (uint)minimumBindAmount;
+            //this.photonView.RPC("HasRaisedOrBet", Photon)
+            HasRaisedOrBet(currentPlayerID);
+            OnEndTurn();
+        }
+    }
+
+    [PunRPC]
+    public void RaiseHandler(int _amount)
     {
         if (PhotonNetwork.isMasterClient)
         {
             Debug.Log("RaiseHandler");
+            minimumBindAmount += _amount;
+            pot += (uint)_amount;
+            hasLastPlayerBet = true;
+            HasRaisedOrBet(currentPlayerID);
             OnEndTurn();
         }
     }
 
     [PunRPC]
-    public void AllInHandler()
+    public void AllInHandler(int _amount)
     {
         if (PhotonNetwork.isMasterClient)
         {
             Debug.Log("AllInHandler");
+            minimumBindAmount += _amount;
+            pot += (uint)_amount;
+            hasLastPlayerBet = true;
+            HasRaisedOrBet(currentPlayerID);
             OnEndTurn();
         }
     }
@@ -110,7 +395,8 @@ public class GameController : Photon.MonoBehaviour {
         if (_slotID < 0)
             _slotID += 6; // max number of players.
 
-        GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID).Find("ButtonPos").Find("DealerButton").gameObject.SetActive(true);
+        //GameObject.Find("PlayerSlotPositions").transform.Find("slot" + _slotID).Find("ButtonPos").Find("DealerButton").gameObject.SetActive(true);
+        this.playerSlots[_slotID].dealerButton.gameObject.SetActive(true);
 
         // If we have at least 3 players, assign current player as the big blind.
         if (PhotonNetwork.playerList.Length > 2)
@@ -167,21 +453,6 @@ public class GameController : Photon.MonoBehaviour {
         }
     }
 
-    void InitPlayers()
-    {
-
-    }
-	
-	// Update is called once per frame
-	void LateUpdate () {
-	    if (Input.touchCount > 0 || Input.GetMouseButtonDown(0))
-        {
-            //PickupFlop();            
-            //Redeal();
-            //DealFlop();
-        }
-	}
-
     [PunRPC]
     public void initGame()
     {
@@ -205,6 +476,11 @@ public class GameController : Photon.MonoBehaviour {
         ChooseDealer();
     }
 
+    static int Comparer(KeyValuePair<uint, Poker.Player> pair1, KeyValuePair<uint, Poker.Player> pair2)
+    {
+        return pair1.Key.CompareTo(pair2.Key);
+    }
+
     void DealOpeningHand(Poker.Player _player)
     {
         if (PhotonNetwork.player.ID == 1)
@@ -216,8 +492,13 @@ public class GameController : Photon.MonoBehaviour {
                 Vector3 serializableCard0 = new Vector3((int)card0.suit, (int)card0.rank, (int)card0.color);
                 Poker.Card card1 = Deal(deck);
                 Vector3 serializableCard1 = new Vector3((int)card1.suit, (int)card1.rank, (int)card1.color);
-
                 _player.photonView.RPC("DealHand", PhotonTargets.All, serializableCard0, serializableCard1);
+                if (_player.hand.Count < 2)
+                {
+                    _player.hand.Add(card0);
+                    _player.hand.Add(card1);
+                }
+
             }
             else
             {
@@ -259,27 +540,6 @@ public class GameController : Photon.MonoBehaviour {
         UpdateFlop();
     }
 
-
-    void RoundManager()
-    {
-
-        // Each player takes a turn whether to Check / Call // Bet / Raise.
-
-        // Deal three cards (Flop)
-
-        // Each player takes a turn whether to Check / Call / Bet / Raise.
-
-        // Deal one card (The Turn)
-
-        // Each player takes a turn whether to Check / Call / Bet / Raise.
-
-        // Deal last card (The River)
-
-        // Final Betting Round
-
-        // Showdown
-    }
-
     [PunRPC]
     void Shuffle(List<Poker.Card> _deck, int seed)
     {
@@ -315,91 +575,64 @@ public class GameController : Photon.MonoBehaviour {
 
     void Redeal()
     {
-        /*
-        foreach (Poker.Player player in players)
-        {
-            foreach (Poker.Card card in player.hand)
-            {
-                deck.Add(card);
-            }
-
-            player.hand.Clear();
-            handPositions[player.id].FindChild("Card0").gameObject.SetActive(false);
-            handPositions[player.id].FindChild("Card1").gameObject.SetActive(false);
-        }
-
-        Shuffle(deck, Random.seed);
-
-        // All players draw initial drawing hand (two cards)
-        foreach (Poker.Player player in players)
-        {
-            // deal two cards
-            player.hand.Add(Deal(deck));
-            player.hand.Add(Deal(deck));
-            UpdatePlayerHand(player.id);
-        }
-        */
 
     }
 
     void UpdatePlayerHand(int player)
     {
-        /*
-        handPositions[player].FindChild("Card0").gameObject.SetActive(true);
-        handPositions[player].FindChild("Card0").gameObject.GetComponent<SpriteRenderer>().sprite = 
-            cardSprites[((int)players[player].hand[0].suit * 13) + (int)players[player].hand[0].rank - 1];
 
-        handPositions[player].FindChild("Card1").gameObject.SetActive(true);
-        handPositions[player].FindChild("Card1").gameObject.GetComponent<SpriteRenderer>().sprite =
-            cardSprites[((int)players[player].hand[1].suit * 13) + (int)players[player].hand[1].rank - 1];
-            */
     }
 
     void UpdateFlop()
     {
-        //for (int i = 0; i < pool.Count; i++)
-        //{
         int counter = 0;
         foreach (Poker.Card _card in pool)
         {
-            GameObject mCard = null;
-            try
-            {
-                mCard = flopPositions[counter].Find("PlayingCard").Find("Card").gameObject;
-            }
-            catch (System.Exception e)
-            {
-                Debug.Log("error: " + e.Message + ", " + counter);
-                Debug.Break();
-            }
-            
-            // initialize card texture
-            Sprite sprite = this.cardSprites[((int)_card.suit * 13) + (int)_card.rank - 1];
-            Texture2D _tex = new Texture2D((int)sprite.rect.width, (int)sprite.rect.height);
+            GameObject mCard = this.flopCards[counter].mCard;
 
-            _tex.SetPixels(sprite.texture.GetPixels((int)sprite.textureRect.x,
-                                        (int)sprite.textureRect.y,
-                                        (int)sprite.textureRect.width,
-                                        (int)sprite.textureRect.height));
-            _tex.Apply();
+            // initialize card texture
+            Texture2D _tex = this.cardTextures[((int)_card.suit * 13) + (int)_card.rank - 1];
+
             mCard.GetComponent<Renderer>().materials[0].mainTexture = _tex;
             mCard.GetComponent<Renderer>().materials[0].SetTexture("_EmissionMap", _tex);
             flopPositions[counter].gameObject.SetActive(true);
             counter++;
         }
-
-        //}
     }
 
     [PunRPC]
     public void Turn()
     {
+        
         if (PhotonNetwork.isMasterClient)
         {
-            if (!hasDealt)
+            bool everyCalled = true;
+            foreach (Poker.Player _player in players)
             {
+                if (!_player.hasCalled)
+                {
+                    everyCalled = false;
+                }
+            }
+
+            Debug.Log("Turn: {everyCalled}: " + everyCalled + ", {hasDealt}: " + hasDealt);
+
+            if (!hasDealt && everyCalled)
+            {
+                hasLastPlayerBet = false;
+                hasLastPlayerCalled = false;
+                foreach (Poker.Player _player in players)
+                {
+                    _player.photonView.RPC("setHasCalled", PhotonTargets.All, false);
+                    _player.photonView.RPC("setHasBet", PhotonTargets.All, false);
+                }
+
                 switch (turnCount)
                 {
+                    case 0:
+                        // Posting binds, first player either keeps minimum bet, or raises.
+                        hasLastPlayerBet = true;
+                        break;
                     case 1:
                         // The Flop
                         DealFlop(3);
@@ -412,6 +645,10 @@ public class GameController : Photon.MonoBehaviour {
                         // The River
                         DealFlop(1);
                         break;
+                    case 4:
+                        // Showdown
+                        EndRound();
+                        break;
                     default:
                         break;
                 }
@@ -419,8 +656,8 @@ public class GameController : Photon.MonoBehaviour {
                 hasDealt = true;
             }
 
-
-            players[currentPlayerID - 1].photonView.RPC("startTurn", PhotonTargets.All);
+            this.photonView.RPC("UpdatePot", PhotonTargets.All, (int)pot);
+            players[currentPlayerID - 1].photonView.RPC("startTurn", PhotonTargets.All, minimumBindAmount, (hasLastPlayerBet || hasLastPlayerCalled));
         }
     }
 
@@ -462,6 +699,7 @@ public class GameController : Photon.MonoBehaviour {
                 }
 
                 turnCount++;
+                Debug.Log("Turn Counter: " + turnCount);
                 hasDealt = false;
             }
         }
@@ -476,7 +714,8 @@ public class GameController : Photon.MonoBehaviour {
     public void AddAllPlayers()
     {
         initGame();
-        GameObject.Find("Canvas").transform.FindChild("btnStart").gameObject.SetActive(false);
+        //mCanvas.transform.FindChild("btnStart").gameObject.SetActive(false);
+        startButton.SetActive(false);
         Debug.Log("Add all players...");
         Debug.Log("Poker.Player Count: " + PhotonNetwork.FindGameObjectsWithComponent(typeof(Poker.Player)).Count);
         this.photonView.RPC("AddAllPlayersSynced", PhotonTargets.All);
@@ -495,12 +734,13 @@ public class GameController : Photon.MonoBehaviour {
         {
             players.Add(_player.GetComponent<Poker.Player>());
             DealOpeningHand(_player.GetComponent<Poker.Player>());
+            Debug.Log("Hand Count: " + _player.GetComponent<Poker.Player>().hand.Count);
             _player.GetComponent<Poker.Player>().photonView.RPC("DealHandTest", PhotonTargets.All, playerIDs.ToArray());        
         }
 
         List<Poker.Player> temp = players.OrderBy(go=>go.id).ToList();
         players = temp;
-
+        players[currentPlayerID - 1].photonView.RPC("PostBlind", PhotonTargets.All);
         Turn();
     }
 

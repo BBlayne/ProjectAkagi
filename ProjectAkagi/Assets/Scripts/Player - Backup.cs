@@ -274,6 +274,7 @@ namespace Poker
         {
             if (hand.Count == 2)
             {
+                /*
                 GameObject _Card0 = localCards.Find("Card0").gameObject;
                 GameObject _Card1 = localCards.Find("Card1").gameObject;
 
@@ -282,6 +283,7 @@ namespace Poker
 
                 _Card1.transform.Find("front").gameObject.GetComponent<SpriteRenderer>().sprite =
                     gameMaster.cardSprites[((int)hand[1].suit * 13) + (int)hand[1].rank - 1];
+                    */
             }
             else
             {
